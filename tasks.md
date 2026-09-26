@@ -4,17 +4,17 @@
 - [x] Set up FastAPI project structure in `/backend`
 - [x] Create PDF/text upload endpoint (PDF upload done; raw-text paste arrives with the frontend)
 - [x] Integrate pdfplumber/pypdf for text extraction
-- [ ] Get Groq API key(s) (2+ accounts for fallback) — *user action: paste into `backend/.env`*
-- [ ] Get Gemini API key — *user action: paste into `backend/.env`*
+- [x] Get Groq API key(s) (2+ accounts for fallback) — *user action: pasted into `backend/.env`; verified live (2 keys)*
+- [x] Get Gemini API key — *user action: pasted into `backend/.env`; verified configured*
 - [x] Build multi-key fallback logic (try Groq → Gemini → next key on rate limit)
 - [x] Write system prompt enforcing strict JSON schema output
-- [x] Test structured JSON output with sample clause text (Postman/curl) — smoke test + live curl in mock mode; retest with real keys once added
+- [x] Test structured JSON output with sample clause text (Postman/curl) — smoke test passes offline (mock) AND live (`--live`): real Groq call, 7 schema-valid findings
 
 ## Phase 2: Hybrid Risk Detection
-- [ ] Build local keyword/pattern matcher using CUAD/UnfairToS/MAUD reference data
-- [ ] Route matched clauses → instant local response (no API call)
-- [ ] Route unmatched clauses → LLM API call
-- [ ] Test full pipeline: upload → extract → detect → JSON output
+- [x] Build local keyword/pattern matcher using CUAD/UnfairToS/MAUD reference data — `backend/app/pattern_matcher.py`: 27 rules (clause names/categories from CUAD's 41-category taxonomy, aggravator vocabulary from UnfairToS, no-shop/assignment constructions from MAUD), punctuation/whitespace-tolerant matching
+- [x] Route matched clauses → instant local response (no API call) — matched sentence spans are excluded from the LLM lane; sample contract: 7 risky clauses caught locally
+- [x] Route unmatched clauses → LLM API call — only uncovered text is chunked and sent (sample: 215/988 chars); `provider_used` reports e.g. `local-patterns+groq:key#1`
+- [x] Test full pipeline: upload → extract → detect → JSON output — offline smoke suite (18 checks) + live e2e: 12 findings, PRD schema, sorted HIGH→SAFE, single Groq request
 
 ## Phase 3: Frontend
 - [ ] Generate UI via Freebuff/AI tool: upload dropzone + dashboard layout

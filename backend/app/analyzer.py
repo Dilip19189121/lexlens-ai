@@ -1,11 +1,15 @@
 """
-analyzer.py — Risk analysis pipeline.
+analyzer.py — Hybrid risk-analysis pipeline.
 
 Responsibilities:
-  1. Chunk long contract text into LLM-friendly slices (with overlap so
-     clauses split across a boundary aren't lost).
-  2. Hold THE system prompt that forces strict JSON schema output.
-  3. Parse/validate the model's response into `ClauseFinding` objects —
+  1. Route each paragraph through the LOCAL pattern matcher first — known
+     risky clauses (from the CUAD/UnfairToS/MAUD-derived rulebook) return
+     instantly with zero API cost.
+  2. Batch only UNRECOGNIZED paragraphs into LLM-sized chunks (with overlap
+     so clauses split across a boundary aren't lost) and call the LLM with
+     multi-key rotation.
+  3. Hold THE system prompt that forces strict JSON schema output.
+  4. Parse/validate the model's response into `ClauseFinding` objects —
      salvaging malformed JSON if the model wraps it in prose or fences.
 """
 
@@ -13,7 +17,7 @@ import json
 import re
 from typing import List
 
-from . import llm_client
+from . import llm_client, pattern_matcher
 from .config import CHUNK_OVERLAP_CHARS, MAX_CHUNK_CHARS
 from .schemas import ClauseFinding
 
@@ -151,33 +155,76 @@ def parse_findings(raw: str) -> List[ClauseFinding]:
 
 # ── Orchestration ───────────────────────────────────────────────────────────
 
-def analyze_contract_text(text: str) -> tuple:
-    """Analyze the full contract text and return (findings, provider_used).
+def _norm_quote(quote: str) -> str:
+    """Collapse whitespace and lowercase a quote for comparison."""
+    return re.sub(r"\s+", " ", quote.lower()).strip()
 
-    Chunks the text, calls the LLM (with key rotation handled in
-    llm_client.call_llm) for each chunk, parses each response, deduplicates
-    findings by (clause_name, quote), and sorts them HIGH → SAFE so the UI
-    can render the worst risks first.
+
+def _same_quote_region(a: str, b: str) -> bool:
+    """Heuristic: do two quotes point at the same document text?
+
+    The LLM and the pattern matcher may quote the same clause with slightly
+    different windows (different start/end, '2. TERMINATION.' prefix, etc.).
+    Comparing normalized quotes as substrings of each other catches that.
+    """
+    na, nb = _norm_quote(a), _norm_quote(b)
+    probe_a, probe_b = na[:100], nb[:100]
+    return bool(probe_a) and bool(probe_b) and (probe_a in nb or probe_b in na)
+
+
+def analyze_contract_text(text: str) -> tuple:
+    """Hybrid analysis of the full contract text: (findings, provider_used).
+
+    Pipeline (prd.md section 5, "Hybrid Risk Detection"):
+      1. Split into paragraphs; run the local pattern matcher on each.
+         Matched paragraphs yield findings INSTANTLY and never hit the API.
+      2. Paragraphs the matcher didn't recognize are joined and chunked
+         (with overlap) for the LLM, which runs with multi-key rotation.
+      3. Merge (local findings first, so dedupe prefers the deterministic
+         result), drop quotes pointing at the same clause text, and sort
+         HIGH → SAFE so the UI renders the worst risks first.
+
+    provider_used is a debug aid: 'local-patterns' when the matcher caught
+    everything, the LLM provider label when nothing matched, or
+    'local-patterns+<provider>' for the mixed case.
 
     Raises:
         llm_client.ProviderError: if every provider/key is exhausted.
         ValueError: if a provider response can't be parsed as the schema.
     """
-    all_findings: List[ClauseFinding] = []
-    provider_used = "none"
+    # ── 1. Fast local lane ──
+    # Known risky clauses are caught here instantly — zero API cost. Match
+    # spans are widened to sentence bounds, and only the text they DON'T
+    # cover gets passed to the LLM lane.
+    local_findings, spans = pattern_matcher.match_with_spans(text)
+    unmatched_text = pattern_matcher.uncovered_text(text, spans)
 
-    for chunk in chunk_text(text):
-        raw, provider_used = llm_client.call_llm(SYSTEM_PROMPT, chunk)
-        all_findings.extend(parse_findings(raw))
+    # ── 2. LLM lane for unrecognized text only ──
+    llm_findings: List[ClauseFinding] = []
+    provider_used = "local-patterns"
+    if unmatched_text:
+        for chunk in chunk_text(unmatched_text):
+            raw, provider = llm_client.call_llm(SYSTEM_PROMPT, chunk)
+            provider_used = provider
+            llm_findings.extend(parse_findings(raw))
+        if local_findings:
+            provider_used = f"local-patterns+{provider_used}"
 
-    # Overlapping chunks can yield the same clause twice — dedupe on name+quote.
-    seen = set()
-    unique = []
+    # ── 3. Merge, dedupe, sort ──
+    all_findings = local_findings + llm_findings
+    unique: List[ClauseFinding] = []
     for f in all_findings:
-        key = (f.clause_name.lower(), f.quote[:120].lower())
-        if key not in seen:
-            seen.add(key)
-            unique.append(f)
+        if any(
+            f.clause_name.lower() == g.clause_name.lower()
+            and _same_quote_region(f.quote, g.quote)
+            for g in unique
+        ):
+            continue
+        if any(_same_quote_region(f.quote, g.quote) for g in unique):
+            # Same text quoted under different names — keep the earlier one
+            # (local pattern findings are inserted first for this reason).
+            continue
+        unique.append(f)
 
     # Worst first: HIGH → MEDIUM → LOW → SAFE.
     order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "SAFE": 3}

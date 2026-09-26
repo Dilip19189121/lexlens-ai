@@ -1,8 +1,9 @@
 """
 routes.py — API route handlers.
 
-Currently just POST /analyze (Phase 1). The hybrid pattern-matching engine
-(Phase 2) will slot in before the LLM call inside analyze_contract_text.
+Currently just POST /analyze. The hybrid pattern-matching engine (Phase 2)
+runs inside analyze_contract_text: known risky clauses are caught locally
+with zero API cost; only unrecognized text reaches the LLM.
 """
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
@@ -19,8 +20,9 @@ router = APIRouter()
 async def analyze_contract(file: UploadFile = File(...)) -> AnalyzeResponse:
     """Analyze an uploaded contract PDF and return structured risk findings.
 
-    Pipeline: validate upload → extract text (pdfplumber) → chunk →
-    LLM analysis with key rotation → strict JSON schema validation.
+    Pipeline: validate upload → extract text (pdfplumber) → local pattern
+    matching (instant, no API) → LLM analysis of unmatched text with key
+    rotation → strict JSON schema validation.
 
     Errors are returned as clean HTTP errors, never raw tracebacks:
       400 — bad file (empty, not a PDF, too large, unreadable, no text layer)
@@ -39,8 +41,8 @@ async def analyze_contract(file: UploadFile = File(...)) -> AnalyzeResponse:
     except extractor.PdfExtractionError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    # 3. Run the risk-analysis pipeline (currently LLM-only; Phase 2 adds the
-    #    local pattern matcher in front of this call).
+    # 3. Run the hybrid risk-analysis pipeline: local pattern matching first
+    #    (zero API cost), LLM (with key rotation) only for unrecognized text.
     try:
         findings, provider_used = analyze_contract_text(text)
     except ProviderError as exc:

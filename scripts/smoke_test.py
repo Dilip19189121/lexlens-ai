@@ -1,7 +1,7 @@
 """
-smoke_test.py — End-to-end Phase 1 verification without real API keys.
+smoke_test.py — End-to-end pipeline verification.
 
-What it covers:
+Default mode (offline, no API keys needed):
   1. Sample PDF generation (if missing).
   2. Full POST /analyze pipeline via FastAPI's TestClient in LLM_MOCK_MODE:
      upload validation -> pdfplumber extraction -> chunking -> mock LLM ->
@@ -9,8 +9,13 @@ What it covers:
   3. The key-rotation chain: Groq 429s must fall through to Gemini (both
      HTTP layers monkeypatched, no network calls).
 
+Live mode (--live): runs the SAME endpoint test against the real Groq/Gemini
+APIs (LLM_MOCK_MODE must be false in backend/.env). Verifies real network
+calls, key rotation readiness, and strict JSON output from the actual models.
+
 Usage (from repo root):
-    backend/.venv/Scripts/python scripts/smoke_test.py
+    backend/.venv/Scripts/python scripts/smoke_test.py            # offline
+    backend/.venv/Scripts/python scripts/smoke_test.py --live     # real APIs
 """
 
 import json
@@ -18,8 +23,13 @@ import os
 import sys
 from pathlib import Path
 
-# Mock mode must be set before the backend config module is imported.
-os.environ["LLM_MOCK_MODE"] = "true"
+LIVE_MODE = "--live" in sys.argv
+sys.argv = [a for a in sys.argv if a != "--live"]
+
+# Mock mode must be set before the backend config module is imported — but only
+# for the default offline run. Live mode uses whatever backend/.env says.
+if not LIVE_MODE:
+    os.environ["LLM_MOCK_MODE"] = "true"
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "backend"))
@@ -45,7 +55,8 @@ def check(name: str, condition: bool, extra: str = "") -> None:
 
 def test_analyze_endpoint(client: TestClient) -> None:
     """Upload the sample PDF and verify the full response contract."""
-    print("\n1. POST /analyze with sample_contract.pdf (mock mode)")
+    mode = "LIVE APIs" if LIVE_MODE else "mock mode"
+    print(f"\n1. POST /analyze with sample_contract.pdf ({mode})")
     with SAMPLE_PDF.open("rb") as fh:
         response = client.post(
             "/analyze",
@@ -56,7 +67,23 @@ def test_analyze_endpoint(client: TestClient) -> None:
 
     check("filename echoed", body.get("filename") == "sample_contract.pdf")
     check("page count parsed", body.get("total_pages") == 1, f"got {body.get('total_pages')}")
-    check("mock provider reported", body.get("provider_used") == "mock", f"got {body.get('provider_used')}")
+    if LIVE_MODE:
+        # Hybrid: local patterns run first; an LLM provider label after the
+        # '+' proves a REAL API call happened for the unmatched text.
+        import re as _re
+
+        check(
+            "hybrid lanes reported (local patterns + real provider)",
+            bool(_re.search(r"local-patterns\+(groq|gemini)", str(body.get("provider_used"))))
+            or str(body.get("provider_used")) in ("groq", "gemini"),
+            f"got {body.get('provider_used')}",
+        )
+    else:
+        check(
+            "hybrid lanes reported (local patterns + mock LLM)",
+            "local-patterns" in str(body.get("provider_used")),
+            f"got {body.get('provider_used')}",
+        )
 
     findings = body.get("findings", [])
     check("findings returned", len(findings) >= 1, f"got {len(findings)}")
@@ -72,7 +99,47 @@ def test_analyze_endpoint(client: TestClient) -> None:
     check("findings sorted HIGH->SAFE", levels == sorted(levels, key=lambda l: order.get(l, 4)), str(levels))
 
 
-def test_validation_errors(client: TestClient) -> None:
+def test_pattern_matcher() -> None:
+    """Unit-test the local matcher: catches known risks, skips benign text."""
+    print("\n2. Local pattern matcher (dataset-derived rules)")
+    from app import pattern_matcher
+
+    check("rules registered", pattern_matcher.rules_count() >= 20, f"got {pattern_matcher.rules_count()}")
+
+    risky = (
+        "Client may terminate this Agreement at any time, for any reason, "
+        "with zero (0) days written notice. Invoices are net-90. "
+        "This Agreement renews automatically for successive one-year terms."
+    )
+    findings = pattern_matcher.match_text(risky)
+    names = {f.clause_name for f in findings}
+    check("risky text: termination caught", "Termination Without Notice" in names, str(sorted(names)))
+    check("risky text: auto-renewal caught", "Auto-Renewal Trap" in names, str(sorted(names)))
+    check("risky text: net-90 caught", "Extended Payment Terms" in names, str(sorted(names)))
+    check(
+        "quotes are verbatim substrings",
+        all(f.quote and f.quote.replace(" ", "") in risky.replace(" ", "") for f in findings),
+    )
+
+    benign = "This Agreement is governed by the laws of Delaware. Work begins on March 1."
+    check("benign text: no findings", pattern_matcher.match_text(benign) == [])
+
+    # net-30 is normal; net-60+ is the risk threshold.
+    ok_terms = pattern_matcher.match_text("Invoices are net-30.")
+    check("net-30 not flagged", not any(f.clause_name == "Extended Payment Terms" for f in ok_terms))
+
+    # Uncovered text: matched sentences are excluded from the LLM lane.
+    text = "Alpha. Client may terminate this Agreement at any time. Beta."
+    _, spans = pattern_matcher.match_with_spans(text)
+    uncovered = pattern_matcher.uncovered_text(text, spans)
+    check(
+        "uncovered text excludes matched clause",
+        "terminate this Agreement" not in uncovered and "Alpha" in uncovered and "Beta" in uncovered,
+        repr(uncovered[:80]),
+    )
+
+
+def test_validation_errors(client: TestClient) -> None:  # offline-only checks
     """Non-PDF and empty uploads must fail with clean 400s."""
     print("\n2. Upload validation")
     response = client.post("/analyze", files={"file": ("notes.txt", b"hello", "text/plain")})
@@ -83,7 +150,7 @@ def test_validation_errors(client: TestClient) -> None:
 
 def test_key_rotation() -> None:
     """Groq 429 must fall through the chain; Gemini succeeding ends it."""
-    print("\n3. Key rotation (monkeypatched, no network)")
+    print("\n4. Key rotation (monkeypatched, no network)")
     from app import config, llm_client
 
     calls = []
@@ -147,10 +214,27 @@ def main() -> int:
         spec.loader.exec_module(module)
         module.main()
 
+    if LIVE_MODE:
+        from app import config as cfg
+
+        if cfg.LLM_MOCK_MODE:
+            print("LIVE MODE ABORTED: LLM_MOCK_MODE is still true in backend/.env")
+            return 1
+        if not (cfg.GROQ_API_KEYS or cfg.GEMINI_API_KEY):
+            print("LIVE MODE ABORTED: no API keys configured in backend/.env")
+            return 1
+        print(
+            f"LIVE MODE: groq keys={len(cfg.GROQ_API_KEYS)} "
+            f"gemini={'yes' if cfg.GEMINI_API_KEY else 'no'} "
+            f"model={cfg.GROQ_MODEL}"
+        )
+
     client = TestClient(app)
     test_analyze_endpoint(client)
-    test_validation_errors(client)
-    test_key_rotation()
+    if not LIVE_MODE:
+        test_pattern_matcher()
+        test_validation_errors(client)
+        test_key_rotation()
 
     print(f"\n{'=' * 50}")
     if failures:

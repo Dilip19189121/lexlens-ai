@@ -12,7 +12,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import config
+from . import config, pattern_matcher
 from .routes import router
 
 logging.basicConfig(level=logging.INFO)
@@ -44,4 +44,5 @@ async def health() -> dict:
         "status": "ok",
         "app": "LexLens AI",
         "providers": config.provider_summary(),
+        "pattern_rules": pattern_matcher.rules_count(),
     }
