@@ -1,0 +1,2167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LexLens AI — Civic Contract Risk Analyzer</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+  <!-- Base Styles -->
+  <style>
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        overscroll-behavior: none;
+      }
+      main > :first-child {
+        margin-top: 0 !important;
+      }
+      main > :last-child {
+        margin-bottom: 0 !important;
+      }
+    }
+    /* Themed slim scrollbar instead of hiding it (scroll affordance matters) */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c5c6cb;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #75777b;
+    }
+    /* Visible keyboard focus everywhere (a11y floor) */
+    a:focus-visible,
+    button:focus-visible,
+    select:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    [tabindex]:focus-visible {
+      outline: 2px solid #75777b;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+    .tnum {
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+
+  <!-- Tailwind CSS & Design System Configuration -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-container-low": "#f4f2fd",
+            "surface-bright": "#fbf8ff",
+            "on-primary-fixed": "#191c20",
+            "on-secondary-fixed": "#251a00",
+            "surface-dim": "#dad9e3",
+            "on-tertiary-fixed-variant": "#005137",
+            "primary": "#000000",
+            "secondary-fixed": "#ffdf94",
+            "surface-container-lowest": "#ffffff",
+            "primary-container": "#191c20",
+            "on-surface-variant": "#45474a",
+            "on-secondary-fixed-variant": "#594400",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "on-error": "#ffffff",
+            "on-error-container": "#93000a",
+            "inverse-on-surface": "#f1effa",
+            "surface-tint": "#5c5e63",
+            "outline-variant": "#c5c6cb",
+            "surface-variant": "#e3e1ec",
+            "outline": "#75777b",
+            "on-surface": "#1a1b22",
+            "primary-fixed": "#e1e2e8",
+            "surface-container-high": "#e8e7f1",
+            "error": "#ba1a1a",
+            "on-secondary": "#ffffff",
+            "tertiary-fixed-dim": "#68dba9",
+            "background": "#fbf8ff",
+            "on-primary-container": "#818489",
+            "on-secondary-container": "#6e5400",
+            "tertiary": "#000000",
+            "on-primary": "#ffffff",
+            "tertiary-fixed": "#85f8c4",
+            "on-background": "#1a1b22",
+            "inverse-primary": "#c5c6cc",
+            "inverse-surface": "#2f3038",
+            "secondary": "#765b00",
+            "on-primary-fixed-variant": "#44474c",
+            "on-tertiary-container": "#069669",
+            "surface": "#fbf8ff",
+            "on-tertiary-fixed": "#002114",
+            "surface-container": "#eeedf7",
+            "tertiary-container": "#002114",
+            "surface-container-highest": "#e3e1ec",
+            "secondary-fixed-dim": "#f5bf00",
+            "primary-fixed-dim": "#c5c6cc",
+            "secondary-container": "#ffc703"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          spacing: {
+            "space-xs": "0.25rem",
+            "gutter-mobile": "1rem",
+            "margin": "3rem",
+            "space-lg": "1.5rem",
+            "margin-mobile": "1.25rem",
+            "space-md": "1rem",
+            "space-sm": "0.5rem",
+            "space-xl": "2.5rem",
+            "gutter": "1.5rem"
+          },
+          fontFamily: {
+            "body-lg": ["Plus Jakarta Sans"],
+            "headline-lg-mobile": ["Playfair Display"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "headline-lg": ["Playfair Display"],
+            "headline-xl": ["Playfair Display"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "headline-md": ["Playfair Display"],
+            "headline-sm": ["Playfair Display"],
+            "headline-xl-mobile": ["Playfair Display"],
+            "label-md": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"],
+            "label-lg": ["Plus Jakarta Sans"]
+          },
+          fontSize: {
+            "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+            "headline-lg-mobile": ["28px", { lineHeight: "36px", fontWeight: "700" }],
+            "label-sm": ["10px", { lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700" }],
+            "headline-lg": ["40px", { lineHeight: "48px", letterSpacing: "-0.015em", fontWeight: "700" }],
+            "headline-xl": ["56px", { lineHeight: "64px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "body-sm": ["13px", { lineHeight: "20px", fontWeight: "400" }],
+            "headline-md": ["28px", { lineHeight: "36px", fontWeight: "600" }],
+            "headline-sm": ["22px", { lineHeight: "30px", fontWeight: "600" }],
+            "headline-xl-mobile": ["36px", { lineHeight: "44px", letterSpacing: "-0.01em", fontWeight: "700" }],
+            "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600" }],
+            "body-md": ["15px", { lineHeight: "24px", fontWeight: "400" }],
+            "label-lg": ["14px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "600" }]
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="bg-background font-body-md text-body-md text-on-surface antialiased">
+
+  <!-- GLOBAL HEADER -->
+  <header class="fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+    <!-- Top Official Notice Bar -->
+    <div class="w-full bg-secondary-container text-on-secondary-fixed px-gutter py-space-xs text-center">
+      <div class="max-w-7xl mx-auto flex items-center justify-between gap-space-sm">
+        <div class="flex items-center gap-space-sm overflow-hidden">
+          <span class="material-symbols-outlined text-base flex-shrink-0 text-on-secondary-fixed">gavel</span>
+          <p class="font-label-md text-label-md truncate sm:text-clip">
+            Official Notice: For informational and civic literacy purposes only; not official legal counsel or binding legal advice. Consult a licensed attorney in your jurisdiction for active litigation or executed contracts.
+          </p>
+        </div>
+        <div class="flex items-center gap-space-xs flex-shrink-0">
+          <a class="font-label-sm text-label-sm underline hover:text-on-surface cursor-pointer" onclick="navigateTo('terms-conditions')">Learn more</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Navigation Bar -->
+    <div class="h-20 max-w-7xl mx-auto px-gutter flex items-center justify-between gap-space-md">
+      <div class="flex items-center gap-space-md flex-shrink-0">
+        <img alt="LexLens AI Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1X2evdTMkqCYoP0gTKVtX17ceFAhR5vV78pW9sSax8_SwTVdytWhGFeC9M_4aIP_cQY5Kr3HAVbWthNjYjmxHVL9u8hCFva8mzBugOXtNOlOKNj8q4_LMg0uLpTZm_PSw_kyLrvnrE1ZcimCgq0Mkjq2W0IwnZ2s6VOBHVRn2799tbnnCRzhVUw6kQ1H3WHBzIpKDdXUxNsbaQyLbe2AEvTIyUkRMjiZ9XXad1ButXHZciqiZB5PMs3uA" />
+        <a class="flex flex-col cursor-pointer" onclick="navigateTo('home')">
+          <span class="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface leading-none">LexLens AI</span>
+          <span class="font-label-sm text-label-sm text-on-surface-variant">Civic Contract Risk Analyzer</span>
+        </a>
+      </div>
+
+      <nav class="hidden lg:flex items-center gap-space-xs bg-surface-container-low p-space-xs rounded-full">
+        <a class="nav-item px-space-md py-space-xs transition-colors bg-surface-container-high text-on-surface font-semibold rounded-full cursor-pointer" data-nav="home" onclick="navigateTo('home')">Analyzer</a>
+        <a class="nav-item px-space-md py-space-xs transition-colors font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface rounded-full cursor-pointer" onclick="navigateTo('home', 'how-it-works')">How It Works</a>
+        <a class="nav-item px-space-md py-space-xs transition-colors font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface rounded-full cursor-pointer" onclick="navigateTo('home', 'faq-section')">FAQ</a>
+        <a class="nav-item font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface px-space-md py-space-xs rounded-full transition-colors cursor-pointer" data-nav="terms-conditions" onclick="navigateTo('terms-conditions')">Terms &amp; Conditions</a>
+        <a class="nav-item font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface px-space-md py-space-xs rounded-full transition-colors cursor-pointer" data-nav="contact-feedback" onclick="navigateTo('contact-feedback')">Contact &amp; Feedback</a>
+      </nav>
+
+      <div class="flex items-center gap-space-sm">
+        <div class="relative hidden sm:flex items-center bg-surface-container-low rounded-full px-space-sm py-space-xs text-on-surface-variant hover:text-on-surface">
+          <span class="material-symbols-outlined text-lg mr-space-xs">language</span>
+          <select aria-label="Select language" id="header-language-select" class="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer pr-space-xs">
+            <option value="en">English (US)</option>
+            <option value="te">తెలుగు (Telugu)</option>
+            <option value="hi">हिन्दी (Hindi)</option>
+          </select>
+        </div>
+        <a class="hidden sm:inline-flex items-center justify-center font-label-lg text-label-lg rounded-full bg-secondary-container text-on-secondary-fixed hover:bg-secondary-fixed hover:text-on-secondary-fixed px-space-md py-space-xs shadow-[0_4px_12px_-2px_rgba(17,20,24,0.06)] transition-all font-semibold cursor-pointer" onclick="navigateTo('home', 'uploader-box')">Analyze Contract</a>
+        <button class="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-full bg-surface-container-low text-on-surface transition-colors hover:bg-surface-container-high" onclick="toggleMobileMenu()" type="button" aria-label="Toggle navigation menu" aria-expanded="false" id="mobile-menu-btn">
+          <span class="material-symbols-outlined text-xl" id="mobile-menu-icon">menu</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile navigation drawer -->
+    <div class="hidden lg:hidden border-t border-surface-container-high bg-surface/95 backdrop-blur-xl" id="mobile-menu">
+      <nav class="max-w-7xl mx-auto px-gutter py-space-md flex flex-col gap-1 font-label-lg text-label-lg text-on-surface">
+        <a class="px-space-md py-space-sm rounded-lg hover:bg-surface-container-high cursor-pointer" onclick="navigateTo('home'); toggleMobileMenu()">Analyzer</a>
+        <a class="px-space-md py-space-sm rounded-lg hover:bg-surface-container-high cursor-pointer" onclick="navigateTo('home', 'how-it-works'); toggleMobileMenu()">How It Works</a>
+        <a class="px-space-md py-space-sm rounded-lg hover:bg-surface-container-high cursor-pointer" onclick="navigateTo('home', 'faq-section'); toggleMobileMenu()">FAQ</a>
+        <a class="px-space-md py-space-sm rounded-lg hover:bg-surface-container-high cursor-pointer" onclick="navigateTo('terms-conditions'); toggleMobileMenu()">Terms &amp; Conditions</a>
+        <a class="px-space-md py-space-sm rounded-lg hover:bg-surface-container-high cursor-pointer" onclick="navigateTo('contact-feedback'); toggleMobileMenu()">Contact &amp; Feedback</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="w-full pt-20 bg-background min-h-screen">
+
+    <!-- ========================================== -->
+    <!-- PAGE 1: HOME / CONTRACT ANALYZER           -->
+    <!-- ========================================== -->
+    <div id="page-home" class="flex flex-col w-full selection:bg-secondary-container selection:text-on-secondary-fixed">
+      <!-- HERO SECTION -->
+      <section class="relative w-full overflow-hidden pb-space-xl">
+        <div class="absolute inset-0 -z-10 opacity-30 pointer-events-none" style="background-image: radial-gradient(#75777b 0.75px, transparent 0.75px); background-size: 24px 24px;"></div>
+        <div class="max-w-7xl mx-auto px-gutter pt-space-lg lg:pt-space-xl">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+            <!-- Left Column -->
+            <div class="lg:col-span-7 flex flex-col items-start space-y-space-md">
+              <div class="inline-flex items-center gap-space-xs bg-secondary-container text-on-secondary-fixed px-space-md py-space-xs rounded-full shadow-[0_2px_8px_-2px_rgba(255,199,3,0.4)]">
+                <span class="material-symbols-outlined text-base" style="font-variation-settings: 'FILL' 1;">verified</span>
+                <span class="font-label-md text-label-md tracking-wide uppercase">✦ AI-Powered Civic Legal Scanner</span>
+              </div>
+              <h1 class="font-headline-xl text-headline-xl lg:text-[62px] text-on-surface leading-[1.08] tracking-tight">
+                Scan your contract <br class="hidden sm:inline" />
+                <span class="relative inline-block">
+                  <span class="relative z-10">before you sign.</span>
+                  <span class="absolute left-0 bottom-1.5 w-full h-3.5 bg-secondary-container -z-0 rounded-sm opacity-80"></span>
+                </span>
+              </h1>
+              <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl pt-space-xs">
+                Empowering renters, freelancers, and everyday employees to identify predatory clauses, hidden liabilities, and unfair terms in minutes — without expensive legal retainer fees.
+              </p>
+              <div class="flex flex-wrap items-center gap-space-sm pt-space-sm w-full sm:w-auto">
+                <a class="relative group inline-flex items-center justify-center gap-space-sm bg-primary text-on-primary hover:bg-on-surface-variant px-space-xl py-space-md rounded-full shadow-[0_12px_24px_-8px_rgba(0,0,0,0.3)] transition-all transform active:scale-95 font-label-lg text-label-lg font-bold" href="#uploader-box">
+                  <span class="material-symbols-outlined text-xl text-secondary-container">document_scanner</span>
+                  <span>Upload Contract for Free Scan</span>
+                </a>
+                <button class="inline-flex items-center justify-center gap-space-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface px-space-lg py-space-md rounded-full transition-all font-label-lg text-label-lg" onclick="loadSampleLeaseDemo()" type="button">
+                  <span class="material-symbols-outlined text-lg">description</span>
+                  <span>Try with a Sample Lease</span>
+                </button>
+              </div>
+              <div class="flex flex-wrap items-center gap-x-space-md gap-y-space-xs pt-space-sm text-on-surface-variant font-label-sm text-label-sm">
+                <div class="flex items-center gap-space-xs">
+                  <span class="material-symbols-outlined text-sm text-on-tertiary-container">check_circle</span>
+                  <span>100% Free for Civic Use</span>
+                </div>
+                <div class="flex items-center gap-space-xs">
+                  <span class="material-symbols-outlined text-sm text-on-tertiary-container">lock_reset</span>
+                  <span>Zero Document Retention</span>
+                </div>
+                <div class="flex items-center gap-space-xs">
+                  <span class="material-symbols-outlined text-sm text-on-tertiary-container">translate</span>
+                  <span>English, Telugu &amp; Hindi Supported</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Column -->
+            <div class="lg:col-span-5 relative flex flex-col gap-space-md mt-space-md lg:mt-0">
+              <div class="relative bg-surface-container-lowest rounded-2xl p-space-lg shadow-[0_16px_40px_-12px_rgba(17,20,24,0.08)] overflow-hidden">
+                <div class="flex items-center justify-between pb-space-md">
+                  <div class="flex items-center gap-space-sm">
+                    <span class="w-3 h-3 rounded-full bg-error"></span>
+                    <span class="w-3 h-3 rounded-full bg-secondary-container"></span>
+                    <span class="w-3 h-3 rounded-full bg-on-tertiary-container"></span>
+                    <span class="font-label-sm text-label-sm text-outline ml-space-xs">Sample Clause Preview</span>
+                  </div>                    <span class="font-label-sm text-label-sm bg-surface-container-high text-on-surface px-space-sm py-0.5 rounded-full">Hybrid Audit Engine</span>
+                </div>
+                <div class="space-y-space-sm">
+                  <div class="bg-surface-container-low p-space-md rounded-xl space-y-space-xs">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-space-xs text-error font-label-sm text-label-sm">
+                        <span class="material-symbols-outlined text-sm">warning</span>
+                        <span>Clause Flagged: Unreasonable Forfeiture</span>
+                      </div>
+                      <span class="text-error font-label-sm text-label-sm font-bold">Severity: Critical</span>
+                    </div>
+                    <p class="font-headline-sm text-headline-sm italic text-on-surface leading-tight bg-secondary-container/40 p-space-xs rounded">
+                      "Tenant forfeits full deposit upon 24hr delayed notice..."
+                    </p>
+                    <div class="flex items-center justify-between pt-space-xs text-outline font-label-sm text-label-sm">
+                      <span>Section 14 • Standard Tenancy Form</span>
+                      <span class="text-on-surface font-semibold underline">Translated to Plain Talk →</span>
+                    </div>
+                  </div>
+                  <div class="relative rounded-xl overflow-hidden bg-surface-container-high h-28 flex items-center justify-center group">
+                    <img alt="LexLens Legal Dashboard reference preview" class="w-full h-full object-cover object-top opacity-60 group-hover:opacity-85 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeFYub62s9zeVdin3EIwuYvm4yFuIiTNNaJRSi63i566bSo-cnw4p09wY6DSgl1S47HPAgc0pFrxydV0ZGNjLFbHyKYZTyatmp48f7m4fzfGc758szlwkUqHfpdrunzCoSqB1KpbQXBpo3Q8al3EAW6SsIHKz2In7g9kG0I6HP-ZnjAryWD2Uli1hmcMqzejXTlUENaHFEiaBCZ-emQ2ZH8oDzEAtxYDd2DUHxJvoE3hwJSp699O8PfgoPFbvuMnEq" />
+                    <div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-surface-container-lowest/60 to-transparent flex items-end p-space-md">
+                      <p class="font-label-sm text-label-sm text-on-surface font-semibold flex items-center gap-space-xs">
+                        <span class="material-symbols-outlined text-base text-secondary">verified_user</span>
+                        Pre-calibrated against Model Tenancy &amp; Labor Standards
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 gap-space-sm">
+                <div class="bg-secondary-container text-on-secondary-fixed p-space-md rounded-xl shadow-[0_8px_20px_-6px_rgba(255,199,3,0.3)] flex flex-col justify-between">
+                  <span class="font-headline-lg text-headline-lg font-bold leading-none tnum">27</span>
+                  <span class="font-label-sm text-label-sm leading-tight pt-space-xs">Clause patterns from CUAD, UnfairToS &amp; MAUD datasets</span>
+                </div>
+                <div class="bg-secondary-container text-on-secondary-fixed p-space-md rounded-xl shadow-[0_8px_20px_-6px_rgba(255,199,3,0.3)] flex flex-col justify-between">
+                  <span class="font-headline-lg text-headline-lg font-bold leading-none tnum">3</span>
+                  <span class="font-label-sm text-label-sm leading-tight pt-space-xs">Output languages — English, Telugu &amp; Hindi</span>
+                </div>
+                <div class="bg-secondary-container text-on-secondary-fixed p-space-md rounded-xl shadow-[0_8px_20px_-6px_rgba(255,199,3,0.3)] flex flex-col justify-between">
+                  <span class="font-headline-lg text-headline-lg font-bold leading-none tnum">0</span>
+                  <span class="font-label-sm text-label-sm leading-tight pt-space-xs">Documents stored — processed in memory, purged after</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- UPLOAD & CONTRACT INPUT WORKSPACE -->
+      <section class="w-full bg-surface-container-lowest py-space-xl shadow-[0_4px_24px_rgba(0,0,0,0.03)]" id="uploader-box">
+        <div class="max-w-5xl mx-auto px-gutter">
+          <div class="text-center max-w-xl mx-auto pb-space-lg space-y-space-xs">
+            <h2 class="font-headline-lg text-headline-lg text-on-surface">Submit Contract for Instant Audit</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant">Drop your legal document or paste raw clauses below. Processing is done in transient memory and purged immediately.</p>
+          </div>
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pb-space-md">
+            <div class="flex bg-surface-container-low p-1 rounded-full w-full sm:w-auto shadow-inner">
+              <button class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-space-xs px-space-lg py-space-xs rounded-full font-label-lg text-label-lg bg-surface-container-lowest text-on-surface shadow-sm transition-all font-semibold" id="tab-file-btn" onclick="switchUploadTab('file')">
+                <span class="material-symbols-outlined text-base">upload_file</span>
+                <span>Drag-and-Drop PDF</span>
+              </button>
+              <button class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-space-xs px-space-lg py-space-xs rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-all" id="tab-text-btn" onclick="switchUploadTab('text')">
+                <span class="material-symbols-outlined text-base">edit_note</span>
+                <span>Paste Contract Text Instead</span>
+              </button>
+            </div>
+            <div class="flex items-center gap-space-xs w-full sm:w-auto justify-end bg-surface-container-low px-space-md py-space-xs rounded-full">
+              <span class="material-symbols-outlined text-lg text-secondary">g_translate</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap">Output Language:</span>
+              <select class="bg-transparent font-label-md text-label-md text-on-surface font-semibold focus:outline-none cursor-pointer" id="analysis-language-select">
+                <option value="en">English (Original Legal + Plain English)</option>
+                <option value="te">తెలుగు (Telugu Dialect-Aware)</option>
+                <option value="hi">हिन्दी (Hindi Plain Law Summary)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- TAB 1: Drag and Drop Dropzone -->
+          <div class="relative group rounded-2xl bg-surface-container-low p-space-xl text-center transition-all hover:bg-surface-container" id="dropzone-view">
+            <svg class="absolute inset-0 w-full h-full pointer-events-none rounded-2xl" fill="none" stroke="#c5c6cb" stroke-dasharray="8 8" stroke-width="2">
+              <rect height="100%" rx="16" width="100%"></rect>
+            </svg>
+            <div class="relative z-10 flex flex-col items-center justify-center py-space-lg space-y-space-md">
+              <div class="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-fixed shadow-[0_8px_16px_-4px_rgba(255,199,3,0.4)]">
+                <span class="material-symbols-outlined text-3xl">cloud_upload</span>
+              </div>
+              <div class="space-y-space-xs">
+                <h3 class="font-headline-sm text-headline-sm text-on-surface">Drag your agreement here or select a file</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant max-w-md mx-auto">
+                  Accepts .PDF, .DOCX, or .TXT up to 25MB. Text extraction and clause categorization starts automatically.
+                </p>
+              </div>
+              <div class="flex items-center gap-space-sm pt-space-xs">
+                <label class="cursor-pointer inline-flex items-center gap-space-xs bg-primary text-on-primary px-space-xl py-space-sm rounded-full font-label-lg text-label-lg font-semibold hover:bg-on-surface-variant transition-colors shadow-sm">
+                  <span class="material-symbols-outlined text-lg">folder_open</span>
+                  <span>Browse Local Files</span>
+                  <input accept=".pdf,.doc,.docx,.txt" class="hidden" id="contract-file-input" onchange="handleFileSelected(this)" type="file" />
+                </label>
+                <button class="inline-flex items-center gap-space-xs bg-secondary-container text-on-secondary-fixed px-space-md py-space-sm rounded-full font-label-md text-label-md font-semibold hover:bg-secondary-fixed transition-colors" onclick="loadSampleLeaseDemo()" type="button">
+                  <span class="material-symbols-outlined text-base">auto_fix_high</span>
+                  <span>Quick Demo</span>
+                </button>
+              </div>
+              <div class="pt-space-md space-y-space-xs">
+                <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider block">Optimized statutory models for:</span>
+                <div class="flex flex-wrap items-center justify-center gap-space-xs">
+                  <span class="bg-surface-container-high text-on-surface font-label-sm text-label-sm px-space-md py-1 rounded-full">Residential Tenancy Lease</span>
+                  <span class="bg-surface-container-high text-on-surface font-label-sm text-label-sm px-space-md py-1 rounded-full">Freelance SOW &amp; IP Assignment</span>
+                  <span class="bg-surface-container-high text-on-surface font-label-sm text-label-sm px-space-md py-1 rounded-full">Employment Offer &amp; Non-Compete</span>
+                  <span class="bg-surface-container-high text-on-surface font-label-sm text-label-sm px-space-md py-1 rounded-full">Equipment &amp; Micro-Enterprise Loan</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: Textarea input view -->
+          <div class="hidden rounded-2xl bg-surface-container-low p-space-lg space-y-space-md" id="paste-view">
+            <div class="flex items-center justify-between">
+              <label class="font-label-lg text-label-lg font-semibold text-on-surface" for="raw-contract-text">Paste Raw Contract Text or Suspicious Clause</label>
+              <span class="font-label-sm text-label-sm text-outline" id="char-counter">0 / 40,000 characters</span>
+            </div>
+            <textarea class="w-full bg-surface-container-lowest p-space-md rounded-xl text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary shadow-sm" id="raw-contract-text" oninput="updateCharCount(this)" placeholder="Paste full clauses or paragraphs here. Example: 'Tenant acknowledges that Landlord shall have sole unreviewable authority to forfeit the entire deposit for any breach of decorum or unapproved guest stays exceeding 12 hours...'" rows="7"></textarea>
+            <div class="flex items-center justify-between pt-space-xs">
+              <button class="font-label-sm text-label-sm text-secondary font-semibold hover:underline flex items-center gap-1" onclick="loadSampleTextClause()" type="button">
+                <span class="material-symbols-outlined text-base">lightbulb</span>
+                <span>Paste sample unfair landlord indemnity clause</span>
+              </button><button class="inline-flex items-center gap-space-xs bg-primary text-on-primary px-space-xl py-space-sm rounded-full font-label-lg text-label-lg font-bold hover:bg-on-surface-variant transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" id="analyze-text-btn" onclick="analyzePastedText()" type="button">
+                  <span class="material-symbols-outlined text-lg">search_check</span>
+                  <span>Analyze Pasted Text</span>
+                </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section class="w-full py-space-xl max-w-7xl mx-auto px-gutter" id="how-it-works">
+        <div class="flex flex-col md:flex-row md:items-end justify-between pb-space-lg">
+          <div class="space-y-space-xs">
+            <span class="font-label-sm text-label-sm text-secondary font-bold tracking-widest uppercase">The Civic Protocol</span>
+            <h2 class="font-headline-lg text-headline-lg text-on-surface">Clear legal comprehension in 3 simple steps</h2>
+          </div>
+          <p class="font-body-md text-body-md text-on-surface-variant max-w-md pt-space-xs md:pt-0">
+            Bridging the gap between 60-page landlord templates and everyday constitutional rights.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+          <div class="relative bg-surface-container-lowest p-space-lg rounded-2xl shadow-[0_4px_16px_rgba(17,20,24,0.04)] flex flex-col justify-between space-y-space-md">
+            <div class="space-y-space-sm">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface font-headline-sm text-headline-sm font-bold">01</div>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface">Upload or Paste</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">
+                Upload your lease agreement, freelance work statement, or job offer securely. Files are memory-processed and never fed into generalized public AI training pools.
+              </p>
+            </div>
+            <div class="pt-space-sm flex items-center gap-space-xs text-on-surface font-label-sm text-label-sm">
+              <span class="material-symbols-outlined text-sm text-on-tertiary-container">enhanced_encryption</span>
+              <span>Client-side zero-retention guarantee</span>
+            </div>
+          </div>
+          <div class="relative bg-surface-container-lowest p-space-lg rounded-2xl shadow-[0_4px_16px_rgba(17,20,24,0.04)] flex flex-col justify-between space-y-space-md">
+            <div class="space-y-space-sm">
+              <div class="w-12 h-12 rounded-xl bg-secondary-container text-on-secondary-fixed flex items-center justify-center font-headline-sm text-headline-sm font-bold">02</div>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface">AI Analyzes Clauses</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">
+                Our specialized civic model screens your document against municipal tenant protection acts, state labor guidelines, and common unconscionable contract doctrines.
+              </p>
+            </div>
+            <div class="pt-space-sm flex items-center gap-space-xs text-on-surface font-label-sm text-label-sm">
+              <span class="material-symbols-outlined text-sm text-secondary">rule</span>
+              <span>Benchmarked to statutory consumer caps</span>
+            </div>
+          </div>
+          <div class="relative bg-surface-container-lowest p-space-lg rounded-2xl shadow-[0_4px_16px_rgba(17,20,24,0.04)] flex flex-col justify-between space-y-space-md">
+            <div class="space-y-space-sm">
+              <div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface font-headline-sm text-headline-sm font-bold">03</div>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface">Get Plain-Language Report</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">
+                Receive clean color-coded risk flags, plain-English summaries, exact counter-negotiation language scripts, and native audio readouts in English, Telugu, or Hindi.
+              </p>
+            </div>
+            <div class="pt-space-sm flex items-center gap-space-xs text-on-surface font-label-sm text-label-sm">
+              <span class="material-symbols-outlined text-sm text-on-tertiary-container">rate_review</span>
+              <span>Copy-paste ready counter amendments</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCANNING PROGRESS BAR (hidden until a real analysis starts) -->
+      <section class="hidden w-full bg-surface-container-high py-space-md" id="scanner-progress-container">
+        <div class="max-w-7xl mx-auto px-gutter flex flex-col sm:flex-row items-center justify-between gap-space-md">
+          <div class="flex items-center gap-space-md w-full sm:w-auto">
+            <div class="relative flex items-center justify-center w-10 h-10 rounded-full bg-secondary-container text-on-secondary-fixed flex-shrink-0 animate-pulse">
+              <span class="material-symbols-outlined text-xl" id="scan-status-icon">sync</span>
+            </div>
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-space-xs">
+                <span class="font-label-lg text-label-lg font-bold text-on-surface" id="scan-status-title">Analyzing contract…</span>
+                <span class="bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm px-2 py-0.5 rounded-full font-bold" id="scan-status-percent">0%</span>
+              </div>
+              <p class="font-body-sm text-body-sm text-on-surface-variant truncate max-w-xl" id="scan-status-subtitle">
+                Preparing document…
+              </p>
+            </div>
+          </div>
+          <div class="w-full sm:w-72 flex flex-col gap-1 flex-shrink-0">
+            <div class="w-full bg-surface-container-lowest h-2.5 rounded-full overflow-hidden">
+              <div class="bg-primary h-full rounded-full transition-all duration-500" id="analysis-progress-bar" style="width: 0%;"></div>
+            </div>
+            <div class="flex justify-between text-outline font-label-sm text-label-sm">
+              <span id="scan-progress-left">Uploading document…</span>
+              <span class="font-semibold text-on-surface" id="scan-progress-right">please wait</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ERROR BANNER (network / backend failures) -->
+      <section class="hidden w-full max-w-7xl mx-auto px-gutter pt-space-md" id="scan-error-container">
+        <div class="flex items-start justify-between gap-space-md p-space-md rounded-xl bg-error-container text-on-error-container shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
+          <div class="flex items-start gap-space-sm">
+            <span class="material-symbols-outlined text-xl mt-0.5">error</span>
+            <div class="space-y-0.5">
+              <h3 class="font-label-lg text-label-lg font-bold">Analysis failed</h3>
+              <p class="font-body-sm text-body-sm" id="scan-error-message">Something went wrong. Please try again.</p>
+            </div>
+          </div>
+          <button class="p-1 rounded-full hover:bg-error/10 transition-colors flex-shrink-0" onclick="dismissScanError()" type="button" aria-label="Dismiss error">
+            <span class="material-symbols-outlined text-lg">close</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- LIVE RISK DASHBOARD SECTION -->
+      <section class="w-full py-space-xl max-w-7xl mx-auto px-gutter" id="risk-dashboard">
+        <div class="bg-surface-container-lowest rounded-2xl p-space-lg shadow-[0_8px_30px_rgba(17,20,24,0.04)] mb-space-lg space-y-space-md">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+            <div>
+              <div class="flex items-center gap-space-xs text-on-tertiary-container font-label-sm text-label-sm font-semibold mb-1">
+                <span class="material-symbols-outlined text-base">verified</span>
+                <span id="audit-status-line">Audit Complete • Hybrid engine: local pattern matcher + AI review</span>
+              </div>
+              <h2 class="font-headline-md text-headline-md text-on-surface" id="audit-doc-title">
+                Contract Risk Audit
+              </h2>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Source Document: <span class="font-mono text-on-surface" id="audit-doc-filename">—</span> • <span id="audit-doc-language">English</span></p>
+            </div>
+            <div class="flex flex-wrap items-center gap-space-xs">
+              <button class="inline-flex items-center gap-space-xs bg-primary text-on-primary hover:bg-on-surface-variant px-space-lg py-space-sm rounded-full font-label-md text-label-md font-bold transition-all shadow-sm" onclick="downloadRiskReport()">
+                <span class="material-symbols-outlined text-base text-secondary-container">download</span>
+                <span>Download Risk Report</span>
+              </button>
+              <button class="inline-flex items-center gap-space-xs bg-surface-container-high hover:bg-surface-container-highest text-on-surface px-space-md py-space-sm rounded-full font-label-md text-label-md transition-colors" onclick="window.print()">
+                <span class="material-symbols-outlined text-base">print</span>
+                <span>Print Audit</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm pt-space-sm">
+            <div class="bg-surface-container-low p-space-md rounded-xl">
+              <span class="font-label-sm text-label-sm text-outline uppercase tracking-wider block">Total Clauses</span>
+              <span class="font-headline-lg text-headline-lg text-on-surface font-bold leading-none mt-1 block tnum" id="stat-total">0</span>
+              <span class="font-body-sm text-body-sm text-on-surface-variant mt-1 block">100% evaluated</span>
+            </div>
+            <div class="bg-[#FEF2F2] p-space-md rounded-xl text-error">
+              <span class="font-label-sm text-label-sm uppercase tracking-wider block font-bold"><span class="inline-block w-2 h-2 rounded-full bg-error mr-1 align-middle"></span>High Risk</span>
+              <span class="font-headline-lg text-headline-lg font-bold leading-none mt-1 block tnum" id="stat-high">0</span>
+              <span class="font-body-sm text-body-sm text-error/80 mt-1 block">Immediate attention required</span>
+            </div>
+            <div class="bg-[#FFFBEB] p-space-md rounded-xl text-secondary">
+              <span class="font-label-sm text-label-sm uppercase tracking-wider block font-bold"><span class="inline-block w-2 h-2 rounded-full bg-secondary-container mr-1 align-middle"></span>Caution</span>
+              <span class="font-headline-lg text-headline-lg font-bold leading-none mt-1 block tnum" id="stat-caution">0</span>
+              <span class="font-body-sm text-body-sm text-secondary/80 mt-1 block">Ambiguous / Overly broad</span>
+            </div>
+            <div class="bg-[#ECFDF5] p-space-md rounded-xl text-on-tertiary-container">
+              <span class="font-label-sm text-label-sm uppercase tracking-wider block font-bold"><span class="inline-block w-2 h-2 rounded-full bg-on-tertiary-container mr-1 align-middle"></span>Safe</span>
+              <span class="font-headline-lg text-headline-lg font-bold leading-none mt-1 block tnum" id="stat-safe">0</span>
+              <span class="font-body-sm text-body-sm text-on-tertiary-container/80 mt-1 block">Standard civic clauses</span>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-xs">
+            <div class="flex flex-wrap items-center gap-space-xs">
+              <span class="font-label-sm text-label-sm text-outline mr-space-xs">Filter Clauses:</span>
+              <button class="filter-btn active-filter px-space-md py-1 rounded-full font-label-md text-label-md bg-primary text-on-primary transition-all" id="filter-all" onclick="filterClauses('all')">All (0)</button>
+              <button class="filter-btn px-space-md py-1 rounded-full font-label-md text-label-md bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-all" id="filter-high" onclick="filterClauses('high')"><span class="inline-block w-2 h-2 rounded-full bg-error mr-1 align-middle"></span>High Risk (0)</button>
+              <button class="filter-btn px-space-md py-1 rounded-full font-label-md text-label-md bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-all" id="filter-caution" onclick="filterClauses('caution')"><span class="inline-block w-2 h-2 rounded-full bg-secondary-container mr-1 align-middle"></span>Caution (0)</button>
+              <button class="filter-btn px-space-md py-1 rounded-full font-label-md text-label-md bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-all" id="filter-safe" onclick="filterClauses('safe')"><span class="inline-block w-2 h-2 rounded-full bg-on-tertiary-container mr-1 align-middle"></span>Safe (0)</button>
+            </div>
+            <div class="text-on-surface-variant font-label-sm text-label-sm flex items-center gap-space-xs">
+              <span class="material-symbols-outlined text-sm">volume_up</span>
+              <span>Click speaker button on any card for dialect audio breakdown</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DETAILED CLAUSE ANALYSIS CARDS (rendered dynamically from /analyze) -->
+        <div class="space-y-space-md" id="clauses-container">
+          <!-- Empty state: shown before the first analysis -->
+          <div id="clauses-empty-state" class="bg-surface-container-lowest rounded-2xl p-space-xl text-center space-y-space-sm shadow-[0_4px_16px_rgba(17,20,24,0.04)]">
+            <div class="w-14 h-14 mx-auto rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+              <span class="material-symbols-outlined text-3xl">find_in_page</span>
+            </div>
+            <h3 class="font-headline-sm text-headline-sm text-on-surface">No audit yet</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant max-w-md mx-auto">
+              Upload a contract PDF or paste its text above, choose your language, and your color-coded risk findings will appear here.
+            </p>
+          </div>
+          <!-- No-risk state: shown when analysis succeeds but nothing needs attention -->
+          <div id="clauses-all-clear" class="hidden bg-surface-container-lowest rounded-2xl p-space-xl text-center space-y-space-sm shadow-[0_4px_16px_rgba(17,20,24,0.04)]">
+            <div class="w-14 h-14 mx-auto rounded-full bg-[#ECFDF5] flex items-center justify-center text-on-tertiary-container">
+              <span class="material-symbols-outlined text-3xl">verified_user</span>
+            </div>
+            <h3 class="font-headline-sm text-headline-sm text-on-surface">No risky clauses detected</h3>
+            <p class="font-body-md text-body-md text-on-surface-variant max-w-md mx-auto">
+              The engine found no HIGH, CAUTION, or LOW-risk clauses in this document. It may simply be a clean contract — or use language our patterns haven't seen. An AI-only re-read is always worth considering for high-stakes signings.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ SECTION -->
+      <section class="w-full py-space-xl bg-surface-container-low" id="faq-section">
+        <div class="max-w-4xl mx-auto px-gutter space-y-space-lg">
+          <div class="text-center space-y-space-xs">
+            <span class="font-label-sm text-label-sm text-secondary font-bold tracking-widest uppercase">Transparency First</span>
+            <h2 class="font-headline-lg text-headline-lg text-on-surface">Frequently Asked Questions</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant">Everything you need to know about our civic data boundaries and model reasoning.</p>
+          </div>
+          <div class="space-y-space-sm">
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+              <button class="w-full flex items-center justify-between p-space-md text-left font-headline-sm text-headline-sm text-on-surface" onclick="toggleFaq(this)" type="button">
+                <span>Is LexLens AI considered legal advice?</span>
+                <span class="material-symbols-outlined text-xl transition-transform duration-200">expand_more</span>
+              </button>
+              <div class="faq-content hidden px-space-md pb-space-md text-on-surface-variant font-body-md text-body-md">
+                No. LexLens AI is an open civic literacy project designed to empower individuals with understandable analysis of dense contractual text. It does not establish an attorney-client relationship, does not file pleadings, and does not replace counsel from an attorney licensed in your jurisdiction.
+              </div>
+            </div>
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+              <button class="w-full flex items-center justify-between p-space-md text-left font-headline-sm text-headline-sm text-on-surface" onclick="toggleFaq(this)" type="button">
+                <span>Is my uploaded contract stored or used to train public AI models?</span>
+                <span class="material-symbols-outlined text-xl transition-transform duration-200">expand_more</span>
+              </button>
+              <div class="faq-content hidden px-space-md pb-space-md text-on-surface-variant font-body-md text-body-md">
+                Never. We operate under a strict zero-retention memory policy. Documents are ingested into an isolated temporary RAM session, evaluated against local statutory rules, and permanently purged immediately upon session completion. We do not sell data or retain your documents for machine-learning corpora.
+              </div>
+            </div>
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+              <button class="w-full flex items-center justify-between p-space-md text-left font-headline-sm text-headline-sm text-on-surface" onclick="toggleFaq(this)" type="button">
+                <span>What file formats and sizes are supported?</span>
+                <span class="material-symbols-outlined text-xl transition-transform duration-200">expand_more</span>
+              </button>
+              <div class="faq-content hidden px-space-md pb-space-md text-on-surface-variant font-body-md text-body-md">
+                LexLens AI accepts standard PDF agreements (both native text and OCR scanned layers), Microsoft Word documents (.DOCX), and raw plain text (.TXT) files up to 25MB in total payload size.
+              </div>
+            </div>
+            <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+              <button class="w-full flex items-center justify-between p-space-md text-left font-headline-sm text-headline-sm text-on-surface" onclick="toggleFaq(this)" type="button">
+                <span>Which languages are supported for translation and summaries?</span>
+                <span class="material-symbols-outlined text-xl transition-transform duration-200">expand_more</span>
+              </button>
+              <div class="faq-content hidden px-space-md pb-space-md text-on-surface-variant font-body-md text-body-md">
+                Our translation pipeline natively handles English, Telugu (తెలుగు), and Hindi (हिन्दी). The engine is specially calibrated to map complex common-law terminology (such as 'indemnification', 'liquidated damages', and 'joint &amp; several liability') into culturally precise everyday idioms.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TRUST & PRIVACY NOTE BANNER -->
+      <section class="w-full bg-surface-container-lowest py-space-lg">
+        <div class="max-w-7xl mx-auto px-gutter">
+          <div class="bg-surface-container-low rounded-2xl p-space-md sm:p-space-lg flex flex-col md:flex-row items-center justify-between gap-space-md">
+            <div class="flex items-center gap-space-md">
+              <div class="w-12 h-12 rounded-xl bg-secondary-container text-on-secondary-fixed flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-2xl">shield_locked</span>
+              </div>
+              <div class="space-y-0.5">
+                <h4 class="font-headline-sm text-headline-sm text-on-surface">Enterprise-Grade Client-Side Encryption</h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">Zero-retention memory • Powered by vetted legal taxonomies • Built for LexHack 2026</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-space-xs flex-shrink-0">
+              <span class="inline-flex items-center gap-1 text-on-surface font-label-md text-label-md bg-surface-container-lowest px-space-md py-space-xs rounded-full shadow-sm">
+                <span class="material-symbols-outlined text-sm text-on-tertiary-container">lock</span>
+                <span>TLS 1.3 Strict Enforced</span>
+              </span>
+              <a class="inline-flex items-center gap-1 text-on-surface font-label-md text-label-md bg-surface-container-lowest px-space-md py-space-xs rounded-full shadow-sm hover:text-secondary transition-colors cursor-pointer" onclick="navigateTo('terms-conditions')">
+                <span class="material-symbols-outlined text-sm">policy</span>
+                <span>Audit Protocol</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PAGE 2: TERMS & CONDITIONS                 -->
+    <!-- ========================================== -->
+    <div id="page-terms-conditions" class="hidden flex-col w-full">
+      <div class="relative w-full max-w-7xl mx-auto px-gutter py-space-lg sm:py-space-xl overflow-hidden">
+        <div class="absolute top-10 right-4 w-96 h-96 bg-secondary-container/15 rounded-full blur-3xl pointer-events-none -z-10"></div>
+        <div class="absolute top-1/2 left-0 w-80 h-80 bg-surface-container-high/60 rounded-full blur-3xl pointer-events-none -z-10"></div>
+        
+        <div class="flex flex-col gap-space-sm max-w-4xl mb-space-xl">
+          <div class="flex flex-wrap items-center gap-space-xs">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm font-bold tracking-wider uppercase">
+              <span class="material-symbols-outlined text-sm">balance</span>
+              Legal Framework &amp; Civic Transparency
+            </span>
+            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+              <span class="material-symbols-outlined text-xs">history_edu</span>
+              LexHack 2026 Edition
+            </span>
+          </div>
+          <h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight mt-2">
+            Terms of Service &amp; Usage Conditions
+          </h1>
+          <div class="flex flex-wrap items-center gap-space-md text-on-surface-variant font-body-sm text-body-sm pt-space-xs">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-base text-secondary">event_available</span>
+              Effective: March 15, 2026
+            </span>
+            <span class="inline-block w-1 h-1 rounded-full bg-outline-variant"></span>
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined text-base text-on-tertiary-container">lock_reset</span>
+              Zero-Retention Protocol Active
+            </span>
+            <span class="inline-block w-1 h-1 rounded-full bg-outline-variant"></span>
+            <span class="text-on-surface font-label-md text-label-md">Document Revision: 3.4.1</span>
+          </div>
+          <p class="font-body-lg text-body-lg text-on-surface-variant mt-2 leading-relaxed">
+            LexLens AI democratizes legal literacy for tenants, gig workers, and job applicants through automated natural-language parsing. By uploading any agreement, lease, or statement of work, you accept these terms governing computational evaluation, data residency, and statutory boundaries.
+          </p>
+        </div>
+
+        <!-- Statutory Disclaimer Callout -->
+        <div class="relative w-full rounded-2xl bg-secondary-container text-on-secondary-fixed p-space-md sm:p-space-lg shadow-[0_12px_32px_-8px_rgba(255,199,0,0.35),0_4px_12px_-2px_rgba(17,20,24,0.06)] mb-space-xl overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+            <span class="material-symbols-outlined text-[160px]">gavel</span>
+          </div>
+          <div class="relative flex flex-col md:flex-row gap-space-md items-start">
+            <div class="p-3 bg-on-secondary-fixed text-secondary-container rounded-xl flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-3xl">warning</span>
+            </div>
+            <div class="space-y-1.5 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-label-sm text-label-sm font-bold tracking-widest uppercase bg-on-secondary-fixed/10 px-2 py-0.5 rounded">Crucial Statutory Notice</span>
+                <span class="font-label-sm text-label-sm opacity-80">Public Law Information Shield</span>
+              </div>
+              <h2 class="font-headline-sm text-headline-sm font-bold tracking-tight text-on-secondary-fixed">
+                LexLens AI Is an Educational Literacy Platform, Not a Law Firm
+              </h2>
+              <p class="font-body-md text-body-md text-on-secondary-fixed leading-relaxed opacity-95">
+                LexLens AI provides artificial intelligence-assisted educational clause simplification, statistical risk pattern matching, and baseline civic literacy. LexLens AI does <strong class="underline decoration-2">not</strong> provide formal legal advice, case-specific legal representation, or individualized attorney counseling. Use of this application does not establish an attorney-client relationship under any state, national, or bar association canon. For active disputes, impending eviction proceedings, arbitration summons, or signature execution on high-stakes instruments, consult a qualified attorney licensed in your respective jurisdiction.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+          <aside class="lg:col-span-4 sticky top-28 self-start space-y-space-md">
+            <div class="p-space-md rounded-2xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04),0_1px_2px_0_rgba(17,20,24,0.02)] space-y-space-sm">
+              <div class="flex items-center justify-between">
+                <span class="font-label-sm text-label-sm tracking-wider uppercase text-on-surface-variant font-bold">Clause Contents</span>
+                <span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface">7 Articles</span>
+              </div>
+              <nav class="flex flex-col gap-1 text-on-surface-variant" id="toc-nav">
+                <a class="toc-link group flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-low transition-all" href="#section-1">
+                  <span class="flex items-center gap-2 font-label-md text-label-md group-hover:text-on-surface"><span class="text-secondary font-bold">01.</span> Scope of Civic Service</span>
+                  <span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </a>
+                <a class="toc-link group flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-low transition-all" href="#section-2">
+                  <span class="flex items-center gap-2 font-label-md text-label-md group-hover:text-on-surface"><span class="text-secondary font-bold">02.</span> No Attorney-Client Privilege</span>
+                  <span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </a>
+                <a class="toc-link group flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-low transition-all" href="#section-3">
+                  <span class="flex items-center gap-2 font-label-md text-label-md group-hover:text-on-surface"><span class="text-secondary font-bold">03.</span> Document Ownership &amp; IP</span>
+                  <span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </a>
+                <a class="toc-link group flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-low transition-all" href="#section-4">
+                  <span class="flex items-center gap-2 font-label-md text-label-md group-hover:text-on-surface"><span class="text-secondary font-bold">04.</span> Zero-Retention Protocol</span>
+                  <span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </a>
+                <a class="toc-link group flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-low transition-all" href="#section-5">
+                  <span class="flex items-center gap-2 font-label-md text-label-md group-hover:text-on-surface"><span class="text-secondary font-bold">05.</span> Accuracy &amp; AI Nuances</span>
+                  <span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </a>
+                <a class="toc-link group flex items-center justify-between p-2 rounded-lg hover:bg-surface-container-low transition-all" href="#section-6">
+                  <span class="flex items-center gap-2 font-label-md text-label-md group-hover:text-on-surface"><span class="text-secondary font-bold">06.</span> Acceptable Use Directives</span>
+                  <span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </a>
+                <a class="toc-link group flex items-center justify-between p-2 rounded-lg bg-surface-container-high font-bold transition-all" href="#section-7">
+                  <span class="flex items-center gap-2 font-label-md text-label-md group-hover:text-on-surface"><span class="text-secondary font-bold">07.</span> LexHack 2026 Governance</span>
+                  <span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+                </a>
+              </nav>
+            </div>
+
+            <div class="p-space-md rounded-2xl bg-surface-container-low space-y-space-xs">
+              <div class="flex items-center gap-space-xs text-on-tertiary-container">
+                <span class="material-symbols-outlined text-lg">memory</span>
+                <span class="font-label-sm text-label-sm font-bold tracking-wider uppercase">Architecture Safety</span>
+              </div>
+              <div class="font-headline-md text-headline-md text-on-surface font-bold">0 Days</div>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">
+                Data retention lifespan. Unparsed fragments and token streams are terminated in RAM upon browser session close.
+              </p>
+            </div>
+
+            <div class="p-space-md rounded-2xl bg-primary-container text-on-primary space-y-space-sm">
+              <div class="flex items-center gap-2 text-secondary-container">
+                <span class="material-symbols-outlined">help_center</span>
+                <span class="font-label-md text-label-md font-bold uppercase tracking-wider">Civic Ombuds</span>
+              </div>
+              <p class="font-body-sm text-body-sm opacity-90">
+                Have questions regarding these clauses or require an accessibility alternative format?
+              </p>
+              <a class="inline-flex items-center justify-center gap-1.5 w-full py-2 rounded-full bg-secondary-container text-on-secondary-fixed font-label-md text-label-md font-bold hover:bg-secondary-fixed transition-all cursor-pointer" onclick="navigateTo('contact-feedback')">
+                Contact &amp; Civic Feedback
+                <span class="material-symbols-outlined text-sm">arrow_outward</span>
+              </a>
+            </div>
+          </aside>
+
+          <article class="lg:col-span-8 space-y-space-xl">
+            <!-- SECTION 1 -->
+            <section class="scroll-mt-32 p-space-md sm:p-space-lg rounded-2xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04),0_1px_2px_0_rgba(17,20,24,0.02)] space-y-space-md relative overflow-hidden" id="section-1">
+              <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary-container"></div>
+              <div class="flex items-center justify-between border-b border-surface-container-high pb-space-xs">
+                <div class="flex items-center gap-2">
+                  <span class="font-label-sm text-label-sm font-bold px-2 py-0.5 rounded bg-surface-container-high text-on-surface">Article 01</span>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">Operational Charter</span>
+                </div>
+                <span class="material-symbols-outlined text-outline text-lg">document_scanner</span>
+              </div>
+              <h2 class="font-headline-md text-headline-md text-on-surface tracking-tight">1. Scope of Service &amp; Operational Purpose</h2>
+              <div class="space-y-space-sm font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                <p>
+                  LexLens AI provides automated analytical review functions exclusively designed for non-commercial consumer education, plain-English clause summarization, and civic risk mitigation. The Service inspects user-provided contractual texts (such as residential lease agreements, freelance statements of work, independent contractor agreements, and standard employment offers) to execute:
+                </p>
+                <ul class="space-y-2 list-none pl-1">
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-on-tertiary-container text-lg mt-0.5 shrink-0">check_circle</span>
+                    <span><strong>Clause Parsing:</strong> Tokenization of contractual jargon into conversational semantic units.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-on-tertiary-container text-lg mt-0.5 shrink-0">check_circle</span>
+                    <span><strong>Heuristic Anomaly Flagging:</strong> Cross-comparison against documented abusive patterns such as unilateral indemnity shifts, non-compete overreaches, mandatory binding arbitration without opt-outs, and unpermitted deposit forfeiture clauses.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-on-tertiary-container text-lg mt-0.5 shrink-0">check_circle</span>
+                    <span><strong>Multi-lingual Plain Summaries:</strong> Civic accessibility output translations into regional dialects to assist first-generation immigrants and historically disenfranchised signers.</span>
+                  </li>
+                </ul>
+                <p>
+                  The platform does not execute contracts, maintain signature ledgers, escrow deposits, or arbitrate formal grievances between contracting parties.
+                </p>
+              </div>
+            </section>
+
+            <!-- SECTION 2 -->
+            <section class="scroll-mt-32 p-space-md sm:p-space-lg rounded-2xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04),0_1px_2px_0_rgba(17,20,24,0.02)] space-y-space-md relative overflow-hidden" id="section-2">
+              <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-error"></div>
+              <div class="flex items-center justify-between border-b border-surface-container-high pb-space-xs">
+                <div class="flex items-center gap-2">
+                  <span class="font-label-sm text-label-sm font-bold px-2 py-0.5 rounded bg-error-container text-on-error-container">Article 02</span>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">Statutory Immunity &amp; Counsel Status</span>
+                </div>
+                <span class="material-symbols-outlined text-error text-lg">shield</span>
+              </div>
+              <h2 class="font-headline-md text-headline-md text-on-surface tracking-tight">2. Non-Establishment of Legal Representation</h2>
+              <div class="space-y-space-sm font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                <p>
+                  LexLens AI is not a law firm, legal clinic, or licensed attorney bar association affiliate. Accessing, uploading material to, or obtaining report metrics from LexLens AI:
+                </p>
+                <div class="p-space-md rounded-xl bg-surface-container-low space-y-2">
+                  <div class="flex items-center gap-2 text-error font-label-md text-label-md font-bold">
+                    <span class="material-symbols-outlined text-base">cancel</span>
+                    <span>Does not constitute the practice of law</span>
+                  </div>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Output generated does not form an attorney-client relationship under Model Rule 1.18 of the American Bar Association (ABA) or analogous state professional responsibility standards.
+                  </p>
+                  <div class="flex items-center gap-2 text-error font-label-md text-label-md font-bold pt-1">
+                    <span class="material-symbols-outlined text-base">cancel</span>
+                    <span>Does not afford attorney-client privilege protection</span>
+                  </div>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">
+                    Communications transmitted through automated web interfaces do not fall under common law doctrine of attorney work-product or confidential legal counselor privilege.
+                  </p>
+                </div>
+                <p>
+                  No communication via this platform, whether generated by automated models, chat prompts, or community volunteers, shall be construed as a definitive declaration of rights, remedies, or claims under common law or codified statutes.
+                </p>
+              </div>
+            </section>
+
+            <!-- SECTION 3 -->
+            <section class="scroll-mt-32 p-space-md sm:p-space-lg rounded-2xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04),0_1px_2px_0_rgba(17,20,24,0.02)] space-y-space-md relative overflow-hidden" id="section-3">
+              <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+              <div class="flex items-center justify-between border-b border-surface-container-high pb-space-xs">
+                <div class="flex items-center gap-2">
+                  <span class="font-label-sm text-label-sm font-bold px-2 py-0.5 rounded bg-surface-container-high text-on-surface">Article 03</span>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">Intellectual Property</span>
+                </div>
+                <span class="material-symbols-outlined text-outline text-lg">copyright</span>
+              </div>
+              <h2 class="font-headline-md text-headline-md text-on-surface tracking-tight">3. User Representations &amp; Document Ownership</h2>
+              <div class="space-y-space-sm font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                <p>
+                  <strong>You retain 100% intellectual property ownership</strong> and copyright of all documents, drafts, attachments, or text strings uploaded to LexLens AI. By submitting content to the interface, you represent and warrant that:
+                </p>
+                <ul class="space-y-2 list-none pl-1">
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-lg mt-0.5 shrink-0">radio_button_checked</span>
+                    <span>You are a prospective or executed party to the document, or have received express written authorization from the document author or recipient to conduct analytical scrutiny.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-lg mt-0.5 shrink-0">radio_button_checked</span>
+                    <span>The material submitted does not knowingly incorporate classified government secrets, state defense data, protected health records subject to HIPAA restrictions without de-identification, or stolen proprietary trade secrets.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-lg mt-0.5 shrink-0">radio_button_checked</span>
+                    <span>LexLens AI claims zero ownership rights, derivative commercialization rights, or publishing licenses over your submitted agreements.</span>
+                  </li>
+                </ul>
+              </div>
+            </section>
+
+            <!-- SECTION 4 -->
+            <section class="scroll-mt-32 p-space-md sm:p-space-lg rounded-2xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04),0_1px_2px_0_rgba(17,20,24,0.02)] space-y-space-md relative overflow-hidden" id="section-4">
+              <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-on-tertiary-container"></div>
+              <div class="flex items-center justify-between border-b border-surface-container-high pb-space-xs">
+                <div class="flex items-center gap-2">
+                  <span class="font-label-sm text-label-sm font-bold px-2 py-0.5 rounded bg-surface-container-high text-on-surface">Article 04</span>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">Cryptographic Standard</span>
+                </div>
+                <span class="material-symbols-outlined text-on-tertiary-container text-lg">verified_user</span>
+              </div>
+              <h2 class="font-headline-md text-headline-md text-on-surface tracking-tight">4. Zero-Storage &amp; Ephemeral Memory Protocol</h2>
+              <div class="space-y-space-sm font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                <p>
+                  In strict adherence to civic-tech data minimization standards, LexLens AI enforces a deterministic <strong>Zero-Retention Policy</strong> across all public tiers:
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm pt-space-xs">
+                  <div class="p-space-sm rounded-xl bg-surface-container-low space-y-1">
+                    <div class="flex items-center gap-1.5 text-on-surface font-label-md text-label-md font-bold">
+                      <span class="material-symbols-outlined text-secondary text-base">cloud_off</span>
+                      No Long-term Cold Storage
+                    </div>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">
+                      Uploaded files (.pdf, .docx, image text) are ingested strictly into ephemeral volatile RAM memory for vectorization.
+                    </p>
+                  </div>
+                  <div class="p-space-sm rounded-xl bg-surface-container-low space-y-1">
+                    <div class="flex items-center gap-1.5 text-on-surface font-label-md text-label-md font-bold">
+                      <span class="material-symbols-outlined text-secondary text-base">delete_sweep</span>
+                      Automated Cryptographic Scrub
+                    </div>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant">
+                      Upon completion of your risk scoring report, text tokens and image caches are irreversibly purged via secure overwrite routines.
+                    </p>
+                  </div>
+                </div>
+                <p class="pt-2">
+                  LexLens AI does not sell, license, train commercial general-purpose foundational models on, or distribute your private contracts to third-party data brokers under any circumstances.
+                </p>
+              </div>
+            </section>
+
+            <!-- SECTION 5 -->
+            <section class="scroll-mt-32 p-space-md sm:p-space-lg rounded-2xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04),0_1px_2px_0_rgba(17,20,24,0.02)] space-y-space-md relative overflow-hidden" id="section-5">
+              <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary"></div>
+              <div class="flex items-center justify-between border-b border-surface-container-high pb-space-xs">
+                <div class="flex items-center gap-2">
+                  <span class="font-label-sm text-label-sm font-bold px-2 py-0.5 rounded bg-surface-container-high text-on-surface">Article 05</span>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">Technical Disclosures</span>
+                </div>
+                <span class="material-symbols-outlined text-outline text-lg">psychology</span>
+              </div>
+              <h2 class="font-headline-md text-headline-md text-on-surface tracking-tight">5. Accuracy, Hallucination Risks &amp; AI Nuances</h2>
+              <div class="space-y-space-sm font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                <p>
+                  Automated analytical systems operate through probabilistic neural models. Users acknowledge and expressly accept the inherent technical parameters of computational analysis:
+                </p>
+                <ul class="space-y-2 list-none pl-1">
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-lg mt-0.5 shrink-0">info</span>
+                    <span><strong>Jurisdictional Drift:</strong> County ordinances, municipal rent stabilization laws, and state-specific statutory amendments develop more rapidly than model parameter refreshes.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-lg mt-0.5 shrink-0">info</span>
+                    <span><strong>Potential False Flags &amp; Omissions:</strong> While our risk engine prioritizes high-confidence pattern detection, an AI scanner may fail to identify an atypical onerous clause or flag standard statutory boilerplates as caution items.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-lg mt-0.5 shrink-0">info</span>
+                    <span><strong>Civic Decision Autonomy:</strong> LexLens AI does not dictate whether you sign, negotiate, or decline an agreement. Any decision taken post-analysis is at the user's sole discretion and independent evaluation.</span>
+                  </li>
+                </ul>
+              </div>
+            </section>
+
+            <!-- SECTION 6 -->
+            <section class="scroll-mt-32 p-space-md sm:p-space-lg rounded-2xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04),0_1px_2px_0_rgba(17,20,24,0.02)] space-y-space-md relative overflow-hidden" id="section-6">
+              <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-outline"></div>
+              <div class="flex items-center justify-between border-b border-surface-container-high pb-space-xs">
+                <div class="flex items-center gap-2">
+                  <span class="font-label-sm text-label-sm font-bold px-2 py-0.5 rounded bg-surface-container-high text-on-surface">Article 06</span>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">System Integrity</span>
+                </div>
+                <span class="material-symbols-outlined text-outline text-lg">gavel</span>
+              </div>
+              <h2 class="font-headline-md text-headline-md text-on-surface tracking-tight">6. Acceptable Use Policy &amp; Platform Hygiene</h2>
+              <div class="space-y-space-sm font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                <p>
+                  To safeguard server resources and civic integrity for vulnerable community members, you agree not to engage in:
+                </p>
+                <div class="space-y-2">
+                  <div class="flex items-start gap-2 p-2 rounded-lg bg-surface-container-low">
+                    <span class="material-symbols-outlined text-error text-base mt-0.5 shrink-0">block</span>
+                    <span class="font-body-sm text-body-sm">Automated programmatic harvesting, high-concurrency API extraction, or scraping of translation schemas.</span>
+                  </div>
+                  <div class="flex items-start gap-2 p-2 rounded-lg bg-surface-container-low">
+                    <span class="material-symbols-outlined text-error text-base mt-0.5 shrink-0">block</span>
+                    <span class="font-body-sm text-body-sm">Uploading executable binaries, embedded malicious payloads, macro-infested documents, or denial-of-service vectors.</span>
+                  </div>
+                  <div class="flex items-start gap-2 p-2 rounded-lg bg-surface-container-low">
+                    <span class="material-symbols-outlined text-error text-base mt-0.5 shrink-0">block</span>
+                    <span class="font-body-sm text-body-sm">Reverse-engineering proprietary heuristic weights or utilizing output tokens to directly train competing closed-source predatory analytics tools.</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- SECTION 7 -->
+            <section class="scroll-mt-32 p-space-md sm:p-space-lg rounded-2xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04),0_1px_2px_0_rgba(17,20,24,0.02)] space-y-space-md relative overflow-hidden" id="section-7">
+              <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary-fixed-dim"></div>
+              <div class="flex items-center justify-between border-b border-surface-container-high pb-space-xs">
+                <div class="flex items-center gap-2">
+                  <span class="font-label-sm text-label-sm font-bold px-2 py-0.5 rounded bg-surface-container-high text-on-surface">Article 07</span>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">Civic Hackathon Governance</span>
+                </div>
+                <span class="material-symbols-outlined text-outline text-lg">flag</span>
+              </div>
+              <h2 class="font-headline-md text-headline-md text-on-surface tracking-tight">7. Governing Law &amp; LexHack 2026 Initiative Status</h2>
+              <div class="space-y-space-sm font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                <p>
+                  LexLens AI is maintained and demonstrated under the auspices of <strong>LexHack 2026</strong>, a non-commercial civic hackathon and open legal-access research cohort.
+                </p>
+                <p>
+                  To the fullest extent permitted by applicable law, LexLens AI, its voluntary maintainers, civic-tech contributors, and hackathon organizers disclaim all warranties, express or implied, including merchantability, fitness for a particular contract negotiation, or non-infringement. Under no judicial theory shall contributors be liable for consequential, incidental, or exemplary damages arising from contractual arrangements entered into between users and third-party counterparties.
+                </p>
+                <div class="p-space-md rounded-xl bg-surface-container-high text-on-surface flex items-center justify-between flex-wrap gap-2">
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary">verified</span>
+                    <span class="font-label-md text-label-md font-bold">Open Public Good License &amp; Community Stewardship</span>
+                  </div>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant">Open-Access Initiative • March 2026</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- Final Acknowledgment Card -->
+            <div class="p-space-lg rounded-2xl bg-surface-container-low flex flex-col sm:flex-row items-center justify-between gap-space-md">
+              <div class="space-y-1">
+                <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Ready to run a secure document audit?</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">Review contracts risk-free with complete zero-retention memory guarantees.</p>
+              </div>
+              <a class="inline-flex items-center justify-center font-label-lg text-label-lg rounded-full bg-secondary-container text-on-secondary-fixed hover:bg-secondary-fixed px-space-md py-space-xs font-bold shadow-[0_4px_12px_-2px_rgba(17,20,24,0.06)] transition-all shrink-0 cursor-pointer" onclick="navigateTo('home')">
+                Open Contract Analyzer
+                <span class="material-symbols-outlined text-base ml-1">arrow_forward</span>
+              </a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- PAGE 3: CONTACT & FEEDBACK                 -->
+    <!-- ========================================== -->
+    <div id="page-contact-feedback" class="hidden flex-col w-full">
+      <div class="relative w-full max-w-7xl mx-auto px-gutter py-space-xl">
+        <div class="absolute -top-12 right-12 w-96 h-96 bg-secondary-container/15 rounded-full blur-3xl pointer-events-none -z-10"></div>
+        <div class="absolute top-1/2 left-4 w-72 h-72 bg-tertiary-fixed/20 rounded-full blur-3xl pointer-events-none -z-10"></div>
+        
+        <section class="max-w-4xl space-y-space-md mb-space-xl">
+          <div class="inline-flex items-center gap-space-xs bg-secondary-container text-on-secondary-fixed px-space-md py-space-xs rounded-full shadow-sm">
+            <span class="material-symbols-outlined text-sm text-on-secondary-fixed" style="font-variation-settings: 'FILL' 1;">forum</span>
+            <span class="font-label-sm text-label-sm uppercase tracking-wider">Civic Dialogue &amp; Support</span>
+          </div>
+          <div class="space-y-space-xs">
+            <h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight">
+              We Value Your <span class="relative inline-block px-space-xs -rotate-1 rounded bg-secondary-container text-on-secondary-fixed shadow-[0_8px_20px_-6px_rgba(255,199,3,0.45)]">Feedback</span> &amp; Inquiries
+            </h1>
+            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-3xl leading-relaxed">
+              Whether you represent a legal aid society, a community tenant union, or are an individual navigating a complex contract, our LexHack 2026 team wants to hear from you.
+            </p>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm pt-space-sm">
+            <div class="p-space-md rounded-xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04)] flex items-center gap-space-sm">
+              <div class="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center flex-shrink-0 text-on-secondary-fixed">
+                <span class="material-symbols-outlined text-lg">bolt</span>
+              </div>
+              <div>
+                <div class="font-label-md text-label-md text-on-surface-variant">Response Target</div>
+                <div class="font-label-lg text-label-lg text-on-surface font-bold">&lt; 24 Business Hours</div>
+              </div>
+            </div>
+            <div class="p-space-md rounded-xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04)] flex items-center gap-space-sm">
+              <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center flex-shrink-0 text-on-surface">
+                <span class="material-symbols-outlined text-lg">translate</span>
+              </div>
+              <div>
+                <div class="font-label-md text-label-md text-on-surface-variant">Civic Dialects</div>
+                <div class="font-label-lg text-label-lg text-on-surface font-bold">EN • తె (Telugu) • हि (Hindi)</div>
+              </div>
+            </div>
+            <div class="col-span-2 sm:col-span-1 p-space-md rounded-xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04)] flex items-center gap-space-sm">
+              <div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center flex-shrink-0 text-on-tertiary-fixed">
+                <span class="material-symbols-outlined text-lg">shield</span>
+              </div>
+              <div>
+                <div class="font-label-md text-label-md text-on-surface-variant">Privacy Shield</div>
+                <div class="font-label-lg text-label-lg text-on-surface font-bold">Zero-Retention Intake</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+          <!-- Left Column -->
+          <aside class="lg:col-span-5 space-y-space-lg">
+            <div class="p-space-xl rounded-xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04),0_1px_2px_0_rgba(17,20,24,0.02)] space-y-space-lg">
+              <div class="space-y-space-xs">
+                <div class="flex items-center gap-space-xs text-on-surface-variant">
+                  <span class="material-symbols-outlined text-sm text-secondary">verified</span>
+                  <span class="font-label-sm text-label-sm uppercase tracking-wider font-bold">LexLens Civic Initiative</span>
+                </div>
+                <h2 class="font-headline-md text-headline-md text-on-surface">Dedicated Civic Desks</h2>
+                <p class="font-body-md text-body-md text-on-surface-variant">
+                  Built at LexHack 2026 to ensure ordinary signers are never left alone to decode coercive legal clauses.
+                </p>
+              </div>
+              <div class="space-y-space-sm">
+                <div class="p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-md hover:bg-surface-container transition-colors">
+                  <div class="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center text-on-surface shadow-sm flex-shrink-0">
+                    <span class="material-symbols-outlined text-lg">mail</span>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">General &amp; Citizen Inquiries</div>
+                    <a class="font-label-lg text-label-lg font-bold text-on-surface hover:text-secondary truncate block" href="mailto:support@lexlens.ai">support@lexlens.ai</a>
+                    <span class="font-body-sm text-body-sm text-on-surface-variant">Open to all community members &amp; signers</span>
+                  </div>
+                </div>
+                <div class="p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-md hover:bg-surface-container transition-colors">
+                  <div class="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center text-on-surface shadow-sm flex-shrink-0">
+                    <span class="material-symbols-outlined text-lg">hub</span>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">Academic &amp; Hackathon Partnerships</div>
+                    <a class="font-label-lg text-label-lg font-bold text-on-surface hover:text-secondary truncate block" href="mailto:lexhack2026@lexlens.ai">lexhack2026@lexlens.ai</a>
+                    <span class="font-body-sm text-body-sm text-on-surface-variant">Institutional collaborations &amp; civic researchers</span>
+                  </div>
+                </div>
+                <div class="p-space-md rounded-lg bg-surface-container-low flex items-start gap-space-md">
+                  <div class="w-10 h-10 rounded-full bg-surface-container-lowest flex items-center justify-center text-on-surface shadow-sm flex-shrink-0">
+                    <span class="material-symbols-outlined text-lg">domain</span>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="font-label-sm text-label-sm text-on-surface-variant uppercase">Innovation Lab Location</div>
+                    <div class="font-label-lg text-label-lg font-bold text-on-surface">LexHack Open Innovation Lab</div>
+                    <div class="font-body-sm text-body-sm text-on-surface-variant">Legal Aid Tech Collaborative &amp; Civic Sandbox</div>
+                  </div>
+                </div>
+              </div>
+              <div class="p-space-md rounded-lg bg-secondary-container/20 text-on-surface space-y-space-xs">
+                <div class="flex items-center gap-space-xs text-on-secondary-fixed">
+                  <span class="material-symbols-outlined text-base">groups</span>
+                  <span class="font-label-lg text-label-lg font-bold">Support for Civic Orgs</span>
+                </div>
+                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  Special assistance and priority API integrations for non-profit tenant associations, gig-worker coalitions, and pro-bono legal clinics. We provide batch analysis workflows free of charge for non-commercial advocacy.
+                </p>
+              </div>
+              <div class="space-y-space-xs pt-space-xs">
+                <div class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Language Access Guarantee</div>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Inquiries and clause reports accepted in <span class="font-bold text-on-surface">English</span>, <span class="font-bold text-on-surface">Telugu (తెలుగు)</span>, and <span class="font-bold text-on-surface">Hindi (हिन्दी)</span>. Multilingual volunteers prioritize review in your native tongue.
+                </p>
+              </div>
+            </div>
+
+            <div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-[0_2px_8px_-2px_rgba(17,20,24,0.04)] relative overflow-hidden">
+              <div class="flex items-start gap-space-md">
+                <img alt="Civic Legal Advisor Desk lead" class="w-20 h-20 rounded-full object-cover shadow-md flex-shrink-0" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6FHkeHwm-WmdQ1lvzEMab1ZS9BpYRwTfwKk4ioEYUEluJwc3sIjuR3JlLdWaooAdb-DNqT8nrOui9HS5LqYVvznL3xRCp_t72cN2xlT-_HLTx2SpxGWbqLBkivD1vuOLRmJGG6YGWrH4wlPDY25yVJV9sxu46PyyLc60ogAhXBqGxM8fe-XcVNZdH1Ve7P0Cl86Kyj2ZuCRCAXUDcb6mrQKYfNCw_nGvwcdW-BdFVMkkxivrlFRM" />
+                <div class="space-y-space-xs min-w-0">
+                  <div class="inline-block bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm px-space-sm py-0.5 rounded-full font-bold">
+                    Civic Legal Advisor Desk
+                  </div>
+                  <h3 class="font-headline-sm text-headline-sm text-on-surface truncate">Ananya Rao, Esq.</h3>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant">Civic Counsel Lead • LexLens Public Safety Team</p>
+                </div>
+              </div>
+              <div class="mt-space-md p-space-sm rounded-lg bg-surface-container-low font-body-sm text-body-sm text-on-surface-variant italic">
+                “Our promise is that no everyday tenant or gig worker should sign an unconscionable arbitration waiver or hidden penalty without clear, unvarnished translation.”
+              </div>
+            </div>
+          </aside>
+
+          <!-- Right Column: Form -->
+          <section class="lg:col-span-7">
+            <div class="p-space-xl rounded-xl bg-surface-container-lowest shadow-[0_12px_32px_-8px_rgba(17,20,24,0.06),0_2px_8px_-2px_rgba(17,20,24,0.04)] space-y-space-lg">
+              <div class="space-y-space-xs">
+                <div class="flex items-center justify-between">
+                  <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold">Encrypted Intake Channel</span>
+                  <span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-on-tertiary-container bg-surface-container-high px-space-sm py-0.5 rounded-full">
+                    <span class="w-2 h-2 rounded-full bg-on-tertiary-container inline-block animate-pulse"></span>
+                    LexHack Open Desk Active
+                  </span>
+                </div>
+                <h2 class="font-headline-lg text-headline-lg text-on-surface">Share Feedback or Flag a Clause</h2>
+                <p class="font-body-md text-body-md text-on-surface-variant">
+                  Help calibrate our open civic risk engine. Report deceptive phrasing, request partnership, or let us know how your analysis went.
+                </p>
+              </div>
+
+              <form class="space-y-space-lg" id="lexlensContactForm" onsubmit="event.preventDefault(); handleFormSubmission();">
+                <div class="space-y-space-xs">
+                  <label class="font-label-lg text-label-lg text-on-surface block font-semibold">
+                    I am reaching out as a: <span class="text-error">*</span>
+                  </label>
+                  <div class="flex flex-wrap gap-space-xs" id="userTypeContainer">
+                    <button class="user-role-pill px-space-md py-space-xs rounded-full font-label-md text-label-md bg-secondary-container text-on-secondary-fixed font-bold shadow-sm transition-all" data-role="Tenant / Renter" type="button">Tenant / Renter</button>
+                    <button class="user-role-pill px-space-md py-space-xs rounded-full font-label-md text-label-md bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-role="Freelancer / Contractor" type="button">Freelancer / Contractor</button>
+                    <button class="user-role-pill px-space-md py-space-xs rounded-full font-label-md text-label-md bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-role="Employee" type="button">Employee</button>
+                    <button class="user-role-pill px-space-md py-space-xs rounded-full font-label-md text-label-md bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-role="Legal Aid Volunteer" type="button">Legal Aid Volunteer</button>
+                    <button class="user-role-pill px-space-md py-space-xs rounded-full font-label-md text-label-md bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all" data-role="Other" type="button">Other</button>
+                  </div>
+                  <input id="selectedUserType" name="userType" type="hidden" value="Tenant / Renter" />
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+                  <div class="space-y-space-xs">
+                    <label class="font-label-lg text-label-lg text-on-surface block font-semibold" for="fullName">
+                      Full Name <span class="text-error">*</span>
+                    </label>
+                    <input class="w-full h-11 px-space-md rounded-lg bg-surface-container-lowest text-on-surface text-body-md font-body-md shadow-sm outline-none focus:bg-surface-bright focus:shadow-md transition-all placeholder:text-outline-variant" id="fullName" placeholder="e.g. Priya Sharma" required style="box-shadow: 0 1px 3px rgba(0,0,0,0.06);" type="text" />
+                  </div>
+                  <div class="space-y-space-xs">
+                    <label class="font-label-lg text-label-lg text-on-surface block font-semibold" for="emailAddress">
+                      Email Address <span class="text-error">*</span>
+                    </label>
+                    <input class="w-full h-11 px-space-md rounded-lg bg-surface-container-lowest text-on-surface text-body-md font-body-md shadow-sm outline-none focus:bg-surface-bright focus:shadow-md transition-all placeholder:text-outline-variant" id="emailAddress" placeholder="priya@example.org" required style="box-shadow: 0 1px 3px rgba(0,0,0,0.06);" type="email" />
+                  </div>
+                </div>
+
+                <div class="space-y-space-xs">
+                  <label class="font-label-lg text-label-lg text-on-surface block font-semibold" for="inquiryCategory">
+                    Inquiry Category <span class="text-error">*</span>
+                  </label>
+                  <div class="relative">
+                    <select class="w-full h-11 px-space-md rounded-lg bg-surface-container-lowest text-on-surface text-body-md font-body-md shadow-sm appearance-none outline-none focus:bg-surface-bright focus:shadow-md transition-all cursor-pointer pr-10" id="inquiryCategory" required style="box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+                      <option value="General Feedback">General Feedback &amp; Experience</option>
+                      <option value="Report an Unflagged Risky Clause">Report an Unflagged Risky Clause</option>
+                      <option value="Legal Aid Clinic Partnership">Legal Aid Clinic Partnership / Integration</option>
+                      <option value="Multi-Language Translation Request">Multi-Language Translation Request (Telugu/Hindi/Other)</option>
+                      <option value="Technical Issue">Technical Issue / Bug Report</option>
+                    </select>
+                    <span class="material-symbols-outlined absolute right-3 top-2.5 pointer-events-none text-on-surface-variant">expand_more</span>
+                  </div>
+                </div>
+
+                <div class="space-y-space-xs">
+                  <div class="flex items-center justify-between">
+                    <label class="font-label-lg text-label-lg text-on-surface block font-semibold" for="messageContent">
+                      Message / Clause Feedback <span class="text-error">*</span>
+                    </label>
+                    <span class="font-label-sm text-label-sm text-on-surface-variant" id="charCounter">0 / 1200</span>
+                  </div>
+                  <textarea class="w-full p-space-md rounded-lg bg-surface-container-lowest text-on-surface text-body-md font-body-md shadow-sm outline-none focus:bg-surface-bright focus:shadow-md transition-all placeholder:text-outline-variant resize-y" id="messageContent" maxlength="1200" oninput="document.getElementById('charCounter').innerText = this.value.length + ' / 1200'" placeholder="Tell us what happened with your contract analysis, or suggest a new clause type for our detection engine..." required rows="5" style="box-shadow: 0 1px 3px rgba(0,0,0,0.06);"></textarea>
+                </div>
+
+                <div class="space-y-space-sm p-space-md rounded-xl bg-surface-container-low">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-space-sm">
+                      <span class="material-symbols-outlined text-on-surface-variant">attach_file</span>
+                      <div>
+                        <div class="font-label-lg text-label-lg text-on-surface font-semibold">Attach Sample Anonymized Document (Optional)</div>
+                        <div class="font-body-sm text-body-sm text-on-surface-variant">Redacted PDF or TXT excerpt showcasing an edge-case contract clause.</div>
+                      </div>
+                    </div>
+                    <button class="font-label-md text-label-md text-on-surface font-bold bg-surface-container-lowest px-space-md py-space-xs rounded-full shadow-sm hover:bg-surface-variant transition-colors" id="toggleUploadBtn" onclick="toggleAttachmentBox()" type="button">
+                      + Add File
+                    </button>
+                  </div>
+                  <div class="hidden pt-space-sm" id="attachmentDropzone">
+                    <div class="p-space-lg rounded-lg bg-surface-container-lowest text-center space-y-space-xs cursor-pointer hover:bg-surface-bright transition-all" onclick="document.getElementById('fileInputElem').click()">
+                      <span class="material-symbols-outlined text-3xl text-secondary">cloud_upload</span>
+                      <div class="font-label-lg text-label-lg text-on-surface font-bold">Click to select an anonymized sample file</div>
+                      <div class="font-body-sm text-body-sm text-on-surface-variant">PDF, DOCX, or TXT up to 5MB (Ensure personally identifiable details are blacked out)</div>
+                      <input accept=".pdf,.docx,.txt" class="hidden" id="fileInputElem" onchange="handleFilePicked(event)" type="file" />
+                    </div>
+                    <div class="hidden mt-space-xs flex items-center justify-between p-space-xs bg-surface-container-high rounded px-space-sm text-body-sm font-body-sm text-on-surface" id="pickedFileInfo">
+                      <span class="truncate" id="pickedFileName">filename.pdf</span>
+                      <button class="text-error hover:underline font-bold text-label-sm" onclick="clearFileAttachment(event)" type="button">Remove</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-space-xs">
+                  <label class="flex items-start gap-space-sm cursor-pointer select-none">
+                    <input class="mt-1 w-4 h-4 rounded text-primary focus:ring-0 cursor-pointer accent-primary" id="privacyConsent" required type="checkbox" />
+                    <span class="font-body-sm text-body-sm text-on-surface-variant leading-snug">
+                      I confirm that <strong class="text-on-surface">no confidential, proprietary, or personally identifying information</strong> (social security numbers, bank details, unredacted tenant names) is contained within this message or uploaded excerpt.
+                    </span>
+                  </label>
+                </div>
+
+                <div class="pt-space-xs space-y-space-md">
+                  <button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-sm px-space-xl py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold shadow-md hover:bg-secondary-container hover:text-on-secondary-fixed transition-all active:scale-[0.98]" id="submitBtn" type="submit">
+                    <span>Submit Feedback to LexLens Team</span>
+                    <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                  </button>
+                  <div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+                    <span class="material-symbols-outlined text-sm text-on-tertiary-container">lock</span>
+                    <span>Protected by zero-retention memory processing. Inquiries are audited solely by verified LexLens civic researchers.</span>
+                  </div>
+                </div>
+              </form>
+
+              <div class="hidden p-space-lg rounded-xl bg-surface-container text-on-surface space-y-space-sm shadow-[0_4px_16px_-4px_rgba(0,0,0,0.06)]" id="successReassuranceBox">
+                <div class="flex items-center gap-space-sm text-on-tertiary-container">
+                  <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                  <h3 class="font-headline-sm text-headline-sm text-on-surface">Inquiry Received &amp; Logged</h3>
+                </div>
+                <p class="font-body-md text-body-md text-on-surface-variant">
+                  Thank you for contributing to public legal safety! Your feedback has been forwarded to the LexLens Civic Desk. Our volunteer legal review team targets a response or clause model evaluation within <strong>24 business hours</strong>.
+                </p>
+                <div class="pt-space-xs flex items-center gap-space-sm">
+                  <button class="font-label-md text-label-md font-bold px-space-md py-space-xs rounded-full bg-surface-container-lowest text-on-surface shadow-sm hover:bg-surface-variant transition-colors" onclick="resetFormState()" type="button">
+                    Send Another Note
+                  </button>
+                  <a class="font-label-md text-label-md font-semibold text-secondary hover:underline cursor-pointer" onclick="navigateTo('home')">
+                    Return to Contract Analyzer →
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+<!-- Community & Impact Testimonial Footprint -->
+        <section class="mt-space-xl pt-space-lg">
+          <div class="p-space-lg sm:p-space-xl rounded-xl bg-surface-container-low grid grid-cols-1 md:grid-cols-3 gap-space-md items-center">
+            <div class="space-y-space-xs">
+              <div class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-bold">LexHack 2026 Civic Pact</div>
+              <h3 class="font-headline-sm text-headline-sm text-on-surface">Built With &amp; For The Community</h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Our risk rules are co-developed with local tenant advocacy groups and labor paralegals across multiple metro areas.</p>
+            </div>
+            <div class="p-space-md rounded-lg bg-surface-container-lowest shadow-sm space-y-space-xs">
+              <div class="flex items-center gap-1 text-secondary">
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+              </div>
+              <p class="font-body-sm text-body-sm text-on-surface italic">“LexLens helped our tenant union spot an illegal water sub-metering fee in 40 lease agreements simultaneously.”</p>
+              <div class="font-label-sm text-label-sm text-on-surface-variant font-bold">— Austin Tenants United Advocate</div>
+            </div>
+            <div class="p-space-md rounded-lg bg-surface-container-lowest shadow-sm space-y-space-xs">
+              <div class="flex items-center gap-1 text-secondary">
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+              </div>
+              <p class="font-body-sm text-body-sm text-on-surface italic">“The Telugu translation breakdown allowed elderly residents to read the indemnity waivers in plain words.”</p>
+              <div class="font-label-sm text-label-sm text-on-surface-variant font-bold">— Pro Bono Legal Outreach Hub</div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- GLOBAL FOOTER -->
+  <footer class="w-full bg-surface-container-low text-on-surface-variant mt-margin">
+    <div class="max-w-7xl mx-auto px-gutter py-space-xl">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter mb-space-xl">
+        <div class="md:col-span-5 space-y-space-md">
+          <div class="flex items-center gap-space-sm">
+            <img alt="LexLens AI Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1X2evdTMkqCYoP0gTKVtX17ceFAhR5vV78pW9sSax8_SwTVdytWhGFeC9M_4aIP_cQY5Kr3HAVbWthNjYjYjmxHVL9u8hCFva8mzBugOXtNOlOKNj8q4_LMg0uLpTZm_PSw_kyLrvnrE1ZcimCgq0Mkjq2W0IwnZ2s6VOBHVRn2799tbnnCRzhVUw6kQ1H3WHBzIpKDdXUxNsbaQyLbe2AEvTIyUkRMjiZ9XXad1ButXHZciqiZB5PMs3uA" />
+            <span class="font-headline-sm text-headline-sm text-on-surface">LexLens AI</span>
+          </div>
+          <p class="font-body-md text-body-md text-on-surface-variant max-w-md">
+            Democratizing legal literacy for tenants, gig workers, and job applicants. AI-assisted contract review before you sign.
+          </p>
+          <div class="inline-flex items-center gap-space-xs bg-surface-container-high text-on-surface px-space-md py-space-xs rounded-full font-label-sm text-label-sm">
+            <span class="material-symbols-outlined text-sm text-on-tertiary-container">verified_user</span>
+            <span>Zero-Retention Analysis: Encrypted in memory &amp; purged post-analysis</span>
+          </div>
+        </div>
+
+        <div class="md:col-span-4 space-y-space-sm">
+          <h4 class="font-headline-sm text-headline-sm text-on-surface">Navigation &amp; Resources</h4>
+          <ul class="space-y-space-xs font-body-sm text-body-sm">
+            <li class="flex items-center"><a class="hover:text-on-surface transition-colors cursor-pointer" onclick="navigateTo('home')">Home / Contract Analyzer</a></li>
+            <li class="flex items-center"><a class="hover:text-on-surface transition-colors cursor-pointer" onclick="navigateTo('home', 'how-it-works')">How It Works</a></li>
+            <li class="flex items-center"><a class="hover:text-on-surface transition-colors cursor-pointer" onclick="loadSampleLeaseDemo()">Sample Contracts</a></li>
+            <li class="flex items-center"><a class="hover:text-on-surface transition-colors cursor-pointer" onclick="navigateTo('home', 'faq-section')">FAQ</a></li>
+            <li class="flex items-center"><a class="hover:text-on-surface transition-colors cursor-pointer" onclick="navigateTo('terms-conditions')">Terms &amp; Conditions</a></li>
+            <li class="flex items-center"><a class="hover:text-on-surface transition-colors cursor-pointer" onclick="navigateTo('contact-feedback')">Contact &amp; Civic Feedback</a></li>
+          </ul>
+        </div>
+
+        <div class="md:col-span-3 space-y-space-md">
+          <div class="p-space-md rounded-xl bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] space-y-space-xs">
+            <div class="inline-block bg-secondary-container text-on-secondary-fixed font-label-sm text-label-sm px-space-sm py-space-xs rounded-full">Built for LexHack 2026</div>
+            <p class="font-body-sm text-body-sm text-on-surface-variant">A civic-tech initiative dedicated to public legal safety and plain-English translation.</p>
+            <a class="inline-flex items-center gap-space-xs font-label-md text-label-md text-on-surface font-semibold hover:text-secondary" href="https://github.com/lexlens-ai" rel="noopener noreferrer" target="_blank">
+              <span class="material-symbols-outlined text-sm">code</span>
+              <span>github.com/lexlens-ai</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-space-lg flex flex-col sm:flex-row items-center justify-between gap-space-sm font-label-sm text-label-sm text-outline">
+        <p>© 2026 LexLens AI. Dedicated to public civic legal empowerment.</p>
+        <p class="text-center sm:text-right">Not a law firm. No attorney-client relationship formed.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- INTERACTIVE SCRIPTS -->
+  <script>
+    // Page Navigation Router
+    function navigateTo(page, sectionId) {
+      const pages = ['home', 'terms-conditions', 'contact-feedback'];
+      pages.forEach(p => {
+        const el = document.getElementById('page-' + p);
+        if (el) {
+          if (p === page) {
+            el.classList.remove('hidden');
+            el.classList.add('flex');
+          } else {
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+          }
+        }
+      });
+
+      // Update active nav pills
+      document.querySelectorAll('.nav-item').forEach(link => {
+        const target = link.getAttribute('data-nav');
+        if (target === page) {
+          link.className = "nav-item px-space-md py-space-xs transition-colors bg-surface-container-high text-on-surface font-semibold rounded-full cursor-pointer";
+        } else {
+          link.className = "nav-item font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface px-space-md py-space-xs rounded-full transition-colors cursor-pointer";
+        }
+      });
+
+      if (sectionId) {
+        const sec = document.getElementById(sectionId);
+        if (sec) {
+          sec.scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Tab switching between file dropzone and text paste box
+    function switchUploadTab(mode) {
+      const dropzone = document.getElementById('dropzone-view');
+      const pasteview = document.getElementById('paste-view');
+      const fileBtn = document.getElementById('tab-file-btn');
+      const textBtn = document.getElementById('tab-text-btn');
+
+      if (mode === 'file') {
+        dropzone.classList.remove('hidden');
+        pasteview.classList.add('hidden');
+        fileBtn.className = "flex-1 sm:flex-initial inline-flex items-center justify-center gap-space-xs px-space-lg py-space-xs rounded-full font-label-lg text-label-lg bg-surface-container-lowest text-on-surface shadow-sm transition-all font-semibold";
+        textBtn.className = "flex-1 sm:flex-initial inline-flex items-center justify-center gap-space-xs px-space-lg py-space-xs rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-all";
+      } else {
+        dropzone.classList.add('hidden');
+        pasteview.classList.remove('hidden');
+        textBtn.className = "flex-1 sm:flex-initial inline-flex items-center justify-center gap-space-xs px-space-lg py-space-xs rounded-full font-label-lg text-label-lg bg-surface-container-lowest text-on-surface shadow-sm transition-all font-semibold";
+        fileBtn.className = "flex-1 sm:flex-initial inline-flex items-center justify-center gap-space-xs px-space-lg py-space-xs rounded-full font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-all";
+      }
+    }
+
+    // Mobile navigation drawer
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const icon = document.getElementById('mobile-menu-icon');
+      const btn = document.getElementById('mobile-menu-btn');
+      if (!menu) return;
+      const open = menu.classList.toggle('hidden') === false;
+      if (icon) icon.textContent = open ? 'close' : 'menu';
+      if (btn) btn.setAttribute('aria-expanded', String(open));
+    }
+
+    function updateCharCount(el) {
+      const counter = document.getElementById('char-counter');
+      if (counter) {
+        counter.innerText = el.value.length.toLocaleString() + ' / 40,000 characters';
+      }
+    }
+
+    function loadSampleTextClause() {
+      const textarea = document.getElementById('raw-contract-text');
+      if (textarea) {
+        textarea.value = "Section 14.2: Landlord reserves the sole and unreviewable discretion to deduct from the security deposit any perceived diminution in property value, including normal wear and tear, without itemized receipts within 90 days of vacancy.";
+        updateCharCount(textarea);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // LexLens AI — REAL backend integration (POST /analyze)
+    // ─────────────────────────────────────────────────────────────────────
+    const LANGUAGE_MAP = {
+      en: { name: 'English', bcp47: 'en-US' },
+      te: { name: 'Telugu',  bcp47: 'te-IN' },
+      hi: { name: 'Hindi',   bcp47: 'hi-IN' },
+    };
+    const LANGUAGE_NAME_TO_BCP47 = {
+      english: 'en-US', telugu: 'te-IN', hindi: 'hi-IN',
+    };
+
+    // Visual config per backend risk_level (schemas.py: HIGH/MEDIUM/LOW/SAFE).
+    // MEDIUM and LOW both render as yellow "Caution" cards.
+    const RISK_CONFIG = {
+      HIGH: {
+        cls: 'risk-high', bar: 'bg-error', icon: 'dangerous',
+        badge: 'HIGH RISK — Immediate attention required',
+        badgeBg: 'bg-[#FEF2F2] text-error', iconBg: 'bg-[#FEF2F2] text-error',
+        accentText: 'text-error', actionIcon: 'edit_document', actionLabel: 'Suggested Counter-Amendment Script',
+      },
+      MEDIUM: {
+        cls: 'risk-caution', bar: 'bg-secondary-container', icon: 'visibility',
+        badge: 'CAUTION — Ambiguous / overly broad terms',
+        badgeBg: 'bg-[#FFFBEB] text-secondary', iconBg: 'bg-[#FFFBEB] text-secondary',
+        accentText: 'text-secondary', actionIcon: 'edit_document', actionLabel: 'Suggested Counter-Amendment Script',
+      },
+      LOW: {
+        cls: 'risk-caution', bar: 'bg-secondary-container', icon: 'visibility',
+        badge: 'LOW RISK — Worth reviewing before signing',
+        badgeBg: 'bg-[#FFFBEB] text-secondary', iconBg: 'bg-[#FFFBEB] text-secondary',
+        accentText: 'text-secondary', actionIcon: 'edit_document', actionLabel: 'Suggested Counter-Amendment Script',
+      },
+      SAFE: {
+        cls: 'risk-safe', bar: 'bg-on-tertiary-container', icon: 'check_circle',
+        badge: 'SAFE — Standard clause',
+        badgeBg: 'bg-[#ECFDF5] text-on-tertiary-container', iconBg: 'bg-[#ECFDF5] text-on-tertiary-container',
+        accentText: 'text-on-tertiary-container', actionIcon: 'done_all', actionLabel: 'Action Recommended',
+      },
+    };
+
+    const AUDIO_IDLE_HTML = '<span class="material-symbols-outlined text-base">volume_up</span><span>🔊 Listen in English / వినండి / सुनें</span>';
+    const AUDIO_PLAYING_HTML = '<span class="material-symbols-outlined text-base text-on-secondary-fixed">stop_circle</span><span>Stop audio</span>';
+
+    let isAnalyzing = false;
+    let lastInput = null;        // remembers the doc so a language switch can re-run
+    let currentFindings = [];    // findings from the last successful response
+    let currentBcp47 = 'en-US';  // speech language for TTS
+    let progressTimer = null;
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function setAnalyzing(on, docName) {
+      const textBtn = document.getElementById('analyze-text-btn');
+      const fileInput = document.getElementById('contract-file-input');
+      [textBtn, fileInput].forEach(el => { if (el) el.disabled = on; });
+      if (on && textBtn) {
+        textBtn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">refresh</span><span>Analyzing…</span>';
+      } else if (textBtn) {
+        textBtn.innerHTML = '<span class="material-symbols-outlined text-lg">search_check</span><span>Analyze Pasted Text</span>';
+      }
+      const title = document.getElementById('scan-status-title');
+      if (title && on) title.textContent = 'Analyzing: ' + (docName || 'document');
+    }
+
+    function startProgress(docName) {
+      const section = document.getElementById('scanner-progress-container');
+      const bar = document.getElementById('analysis-progress-bar');
+      const pct = document.getElementById('scan-status-percent');
+      const subtitle = document.getElementById('scan-status-subtitle');
+      const left = document.getElementById('scan-progress-left');
+      const right = document.getElementById('scan-progress-right');
+      if (!section || !bar) return;
+
+      section.classList.remove('hidden');
+      bar.style.width = '0%';
+      if (pct) pct.textContent = '0%';
+      if (subtitle) subtitle.textContent = 'Analyzing: ' + docName;
+      if (left) left.textContent = 'Uploading document…';
+      if (right) right.textContent = 'please wait';
+
+      const stages = [
+        [15, 'Extracting text from the document…'],
+        [40, 'Matching known risky-clause patterns…'],
+        [65, 'AI review of unrecognized clauses…'],
+        [85, 'Validating findings against schema…'],
+      ];
+      let p = 0;
+      clearInterval(progressTimer);
+      progressTimer = setInterval(() => {
+        p = Math.min(p + 1.5 + Math.random() * 3.5, 93);
+        bar.style.width = p + '%';
+        if (pct) pct.textContent = Math.round(p) + '%';
+        const stage = stages.find(s => p <= s[0]);
+        if (left) left.textContent = stage ? stage[1] : 'Almost done…';
+      }, 320);
+    }
+
+    function finishProgress(data) {
+      clearInterval(progressTimer);
+      progressTimer = null;
+      const bar = document.getElementById('analysis-progress-bar');
+      const pct = document.getElementById('scan-status-percent');
+      const title = document.getElementById('scan-status-title');
+      const subtitle = document.getElementById('scan-status-subtitle');
+      const left = document.getElementById('scan-progress-left');
+      const right = document.getElementById('scan-progress-right');
+      if (bar) bar.style.width = '100%';
+      if (pct) pct.textContent = '100%';
+      if (title) title.textContent = 'Audit Complete: ' + (data.filename || 'document');
+      if (subtitle) subtitle.textContent = (data.findings ? data.findings.length : 0) + ' findings • sorted worst first • language: ' + (data.language || 'English');
+      if (left) left.textContent = 'Analysis finished';
+      if (right) right.textContent = 'done ✓';
+      setTimeout(() => {
+        const section = document.getElementById('scanner-progress-container');
+        if (section) section.classList.add('hidden');
+      }, 1400);
+    }
+
+    function stopProgress() {
+      clearInterval(progressTimer);
+      progressTimer = null;
+      const section = document.getElementById('scanner-progress-container');
+      if (section) section.classList.add('hidden');
+    }
+
+    function showScanError(message) {
+      const container = document.getElementById('scan-error-container');
+      const msg = document.getElementById('scan-error-message');
+      if (msg) msg.textContent = message;
+      if (container) {
+        container.classList.remove('hidden');
+        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function dismissScanError() {
+      const container = document.getElementById('scan-error-container');
+      if (container) container.classList.add('hidden');
+    }
+
+    async function extractErrorDetail(resp) {
+      let detail = '';
+      try {
+        const j = await resp.json();
+        if (j && typeof j.detail === 'string') detail = j.detail;
+      } catch (_) { /* non-JSON error body — fall through */ }
+      if (detail) return detail;
+      if (resp.status === 400) return 'The document could not be processed. Make sure it is a text-based PDF (not a scan) under 10 MB, or paste the contract text instead.';
+      if (resp.status === 422) return 'Invalid request — please upload a PDF file or paste contract text.';
+      if (resp.status === 502) return 'The AI providers are rate-limited or unreachable right now. Please try again in a minute.';
+      if (resp.status === 503) return 'The LexLens server has no AI providers configured. Please contact the operator.';
+      return 'Unexpected server error (HTTP ' + resp.status + '). Please try again.';
+    }
+
+    async function runAnalysis(input) {
+      if (isAnalyzing) return;
+      const langSel = document.getElementById('analysis-language-select');
+      const langMeta = LANGUAGE_MAP[langSel ? langSel.value : 'en'] || LANGUAGE_MAP.en;
+
+      const formData = new FormData();
+      if (input.file) {
+        formData.append('file', input.file, input.file.name);
+      } else {
+        formData.append('text', input.text);
+      }
+      formData.append('language', langMeta.name);
+
+      isAnalyzing = true;
+      lastInput = input;
+      stopSpeaking();
+      dismissScanError();
+      navigateTo('home');
+      setAnalyzing(true, input.file ? input.file.name : 'pasted text');
+      startProgress(input.file ? input.file.name : 'Pasted Text');
+
+      try {
+        const resp = await fetch('/analyze', { method: 'POST', body: formData });
+        if (!resp.ok) throw new Error(await extractErrorDetail(resp));
+        const data = await resp.json();
+        currentBcp47 = LANGUAGE_NAME_TO_BCP47[String(data.language || '').toLowerCase()] || langMeta.bcp47;
+        finishProgress(data);
+        renderFindings(data);
+      } catch (err) {
+        stopProgress();
+        showScanError(err && err.message ? err.message : 'Could not reach the LexLens backend. Is the server running?');
+      } finally {
+        isAnalyzing = false;
+        setAnalyzing(false);
+      }
+    }
+
+    function renderFindings(data) {
+      currentFindings = Array.isArray(data.findings) ? data.findings : [];
+      const counts = { total: currentFindings.length, high: 0, caution: 0, safe: 0 };
+      currentFindings.forEach(f => {
+        if (f.risk_level === 'HIGH') counts.high++;
+        else if (f.risk_level === 'MEDIUM' || f.risk_level === 'LOW') counts.caution++;
+        else counts.safe++;
+      });
+
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set('stat-total', counts.total);
+      set('stat-high', counts.high);
+      set('stat-caution', counts.caution);
+      set('stat-safe', counts.safe);
+      set('filter-all', 'All (' + counts.total + ')');
+      set('filter-high', 'High Risk (' + counts.high + ')');
+      set('filter-caution', 'Caution (' + counts.caution + ')');
+      set('filter-safe', 'Safe (' + counts.safe + ')');
+
+      const docName = data.filename || 'Contract';
+      set('audit-doc-title', 'Contract Risk Audit: ' + docName);
+      set('audit-doc-filename', docName);
+      set('audit-doc-language', data.language || 'English');
+      set('audit-status-line', 'Audit Complete • Engine: ' + String(data.provider_used || 'hybrid').replace(/\+/g, ' • '));
+
+      const container = document.getElementById('clauses-container');
+      const emptyState = document.getElementById('clauses-empty-state');
+      const allClear = document.getElementById('clauses-all-clear');
+      if (!container) return;
+
+      container.querySelectorAll('.clause-card').forEach(el => el.remove());
+      if (emptyState) emptyState.classList.add('hidden');
+
+      if (!currentFindings.length) {
+        if (allClear) allClear.classList.remove('hidden');
+      } else {
+        if (allClear) allClear.classList.add('hidden');
+        const frag = document.createElement('div');
+        frag.innerHTML = currentFindings.map((f, i) => buildClauseCard(f, i)).join('');
+        while (frag.firstChild) container.appendChild(frag.firstChild);
+      }
+
+      filterClauses('all');
+      setTimeout(() => {
+        const dashboard = document.getElementById('risk-dashboard');
+        if (dashboard) dashboard.scrollIntoView({ behavior: 'smooth' });
+      }, 700);
+    }
+
+    function buildClauseCard(f, index) {
+      const cfg = RISK_CONFIG[f.risk_level] || RISK_CONFIG.LOW;
+      return ''
+        + '<div class="clause-card ' + cfg.cls + ' bg-surface-container-lowest rounded-2xl shadow-[0_4px_16px_rgba(17,20,24,0.04)] overflow-hidden transition-all duration-200" data-risk="' + escapeHtml(f.risk_level) + '">'
+        +   '<div class="w-full h-1.5 ' + cfg.bar + '"></div>'
+        +   '<div class="p-space-lg space-y-space-md">'
+        +     '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">'
+        +       '<div class="flex items-center gap-space-sm">'
+        +         '<span class="w-8 h-8 rounded-full ' + cfg.iconBg + ' flex items-center justify-center flex-shrink-0">'
+        +           '<span class="material-symbols-outlined text-lg">' + cfg.icon + '</span>'
+        +         '</span>'
+        +         '<div>'
+        +           '<span class="' + cfg.badgeBg + ' font-label-sm text-label-sm font-bold px-space-sm py-0.5 rounded-full inline-block mb-1">' + cfg.badge + '</span>'
+        +           '<h3 class="font-headline-sm text-headline-sm text-on-surface">' + escapeHtml(f.clause_name) + '</h3>'
+        +         '</div>'
+        +       '</div>'
+        +       '<button class="audio-btn inline-flex items-center gap-space-xs bg-surface-container-high hover:bg-secondary-container text-on-surface px-space-md py-space-xs rounded-full font-label-sm text-label-sm font-semibold transition-all" data-finding="' + index + '" onclick="speakFinding(this)" type="button">'
+        +         AUDIO_IDLE_HTML
+        +       '</button>'
+        +     '</div>'
+        +     '<div class="bg-surface-container-low p-space-md rounded-xl space-y-space-xs">'
+        +       '<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider block">Verbatim Contract Excerpt:</span>'
+        +       '<blockquote class="font-headline-sm text-headline-sm italic text-on-surface leading-relaxed pl-space-sm">"' + escapeHtml(f.quote) + '"</blockquote>'
+        +     '</div>'
+        +     '<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">'
+        +       '<div class="bg-surface-container-high/60 p-space-md rounded-xl space-y-space-xs">'
+        +         '<div class="flex items-center gap-space-xs text-on-surface font-label-md text-label-md font-bold">'
+        +           '<span class="material-symbols-outlined text-base ' + cfg.accentText + '">info</span>'
+        +           '<span>Plain-Language Translation</span>'
+        +         '</div>'
+        +         '<p class="font-body-md text-body-md text-on-surface">' + escapeHtml(f.plain_summary) + '</p>'
+        +       '</div>'
+        +       '<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm space-y-space-xs">'
+        +         '<div class="flex items-center justify-between">'
+        +           '<div class="flex items-center gap-space-xs ' + cfg.accentText + ' font-label-md text-label-md font-bold">'
+        +             '<span class="material-symbols-outlined text-base">' + cfg.actionIcon + '</span>'
+        +             '<span>' + cfg.actionLabel + '</span>'
+        +           '</div>'
+        +           '<button class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1" onclick="copyScript(this)" type="button">'
+        +             '<span class="material-symbols-outlined text-sm">content_copy</span><span>Copy</span>'
+        +           '</button>'
+        +         '</div>'
+        +         '<p class="font-body-sm text-body-sm text-on-surface bg-surface-container-low p-space-sm rounded-lg font-mono leading-relaxed script-text">' + escapeHtml(f.action_step) + '</p>'
+        +       '</div>'
+        +     '</div>'
+        +   '</div>'
+        + '</div>';
+    }
+
+    function handleFiles(file) {
+      if (!file) return;
+      if (!/\.pdf$/i.test(file.name)) {
+        showScanError('Only .pdf files are accepted right now. Please convert your document to PDF, or paste its text instead.');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        showScanError('File too large — the limit is 10 MB. Try pasting the relevant clauses instead.');
+        return;
+      }
+      runAnalysis({ file: file });
+    }
+
+    function handleFileSelected(input) {
+      handleFiles(input.files && input.files[0]);
+    }
+
+    function analyzePastedText() {
+      const ta = document.getElementById('raw-contract-text');
+      const text = ta ? ta.value.trim() : '';
+      if (!text) {
+        showScanError('Paste some contract text first — or switch to the upload tab and choose a PDF.');
+        return;
+      }
+      runAnalysis({ text: text });
+    }
+
+    // Sample lease demo: fills the paste box with a realistic (risky) sample
+    // and runs the REAL analysis pipeline end-to-end.
+    function loadSampleLeaseDemo() {
+      navigateTo('home');
+      switchUploadTab('text');
+      const ta = document.getElementById('raw-contract-text');
+      if (!ta) return;
+      ta.value = [
+        'RESIDENTIAL TENANCY AGREEMENT (STANDARD 12-MONTH TERM)',
+        '',
+        '1. PARTIES & PREMISES. Landlord leases to Tenant the residential unit at the Premises for a term of twelve (12) months.',
+        '',
+        '2. RENT. Rent of $1,450 is payable on the 1st day of each calendar month, with a mandatory 5-day grace period prior to any late fee assessment.',
+        '',
+        '3. SECURITY DEPOSIT. Tenant shall pay a security deposit of $2,900. Landlord reserves the sole and unreviewable discretion to deduct from the security deposit any perceived diminution in property value, including normal wear and tear, without itemized receipts within 90 days of vacancy.',
+        '',
+        '4. TERMINATION. Landlord may terminate this Agreement at any time, for any reason, with zero (0) days written notice and without payment of any compensation to Tenant.',
+        '',
+        '5. ENTRY. Management may enter the premises at reasonable or necessary times for inspection without mandatory 24-hour advance written notification.',
+        '',
+        '6. DISPUTE RESOLUTION. Tenant waives all rights to jury trial, municipal housing court adjudication, or collective tenant petitioning. Tenant shall reimburse Landlord\'s legal expenses in all disputes regardless of judgment.',
+        '',
+        '7. LIABILITY & INDEMNITY. Tenant shall indemnify, defend, and hold harmless Landlord from any and all claims, damages, or losses arising on the Premises, including those caused by Landlord\'s own negligence.',
+        '',
+        '8. AUTO-RENEWAL. This Agreement renews automatically for successive one-year terms unless Tenant cancels in person at Landlord\'s office at least 90 days before the renewal date.',
+        '',
+        '9. LATE FEE. Rent not received by the 5th of the month incurs a late fee of $150 per day until paid in full.',
+        '',
+        '10. GOVERNING LAW. This Agreement is governed by the laws of the State in which the Premises are located.',
+      ].join('\n');
+      updateCharCount(ta);
+      analyzePastedText();
+    }
+
+    function reRunWithCurrentInput() {
+      if (!lastInput || isAnalyzing) return;
+      runAnalysis(lastInput);
+    }
+
+    function filterClauses(type) {
+      const cards = document.querySelectorAll('.clause-card');
+      const filterButtons = document.querySelectorAll('.filter-btn');
+
+      filterButtons.forEach(btn => {
+        btn.className = "filter-btn px-space-md py-1 rounded-full font-label-md text-label-md bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-all";
+      });
+
+      const activeBtn = document.getElementById('filter-' + type);
+      if (activeBtn) {
+        activeBtn.className = "filter-btn active-filter px-space-md py-1 rounded-full font-label-md text-label-md bg-primary text-on-primary transition-all";
+      }
+
+      cards.forEach(card => {
+        if (type === 'all') {
+          card.classList.remove('hidden');
+        } else if (type === 'high') {
+          card.classList.toggle('hidden', !card.classList.contains('risk-high'));
+        } else if (type === 'caution') {
+          card.classList.toggle('hidden', !card.classList.contains('risk-caution'));
+        } else if (type === 'safe') {
+          card.classList.toggle('hidden', !card.classList.contains('risk-safe'));
+        }
+      });
+    }
+
+    function copyScript(btn) {
+      const parent = btn.closest('.clause-card');
+      const scriptText = parent ? parent.querySelector('.script-text') : null;
+      if (scriptText) {
+        navigator.clipboard.writeText(scriptText.innerText.replace(/^"|"$/g, ''));
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined text-sm text-on-tertiary-container">done</span><span class="text-on-tertiary-container font-bold">Copied!</span>';
+        setTimeout(() => {
+          btn.innerHTML = originalHtml;
+        }, 2000);
+      }
+    }
+
+    // ─── Real Text-to-Speech (browser SpeechSynthesis API) ───
+    // Reads the finding's plain_summary + action_step aloud in the analysis
+    // language returned by the backend (English→en-US, Telugu→te-IN, Hindi→hi-IN).
+    let currentAudioBtn = null;
+
+    function speakFinding(btn) {
+      const idx = parseInt(btn.getAttribute('data-finding'), 10);
+      const finding = currentFindings[idx];
+      if (!finding) return;
+
+      // Toggle off if this button is already speaking.
+      if (currentAudioBtn === btn && window.speechSynthesis && window.speechSynthesis.speaking) {
+        stopSpeaking();
+        return;
+      }
+      stopSpeaking();
+
+      if (!('speechSynthesis' in window)) {
+        showScanError('Sorry — your browser does not support text-to-speech.');
+        return;
+      }
+
+      const text = (finding.plain_summary || '') + ' ' + (finding.action_step || '');
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = currentBcp47;
+      utterance.rate = 0.95;
+
+      // Prefer a voice matching the language; fall back to the default voice.
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang && v.lang.toLowerCase() === currentBcp47.toLowerCase())
+        || voices.find(v => v.lang && v.lang.toLowerCase().startsWith(currentBcp47.slice(0, 2).toLowerCase()));
+      if (voice) utterance.voice = voice;
+
+      utterance.onend = () => resetAudioBtn(btn);
+      utterance.onerror = () => resetAudioBtn(btn);
+
+      currentAudioBtn = btn;
+      btn.setAttribute('data-playing', 'true');
+      btn.innerHTML = AUDIO_PLAYING_HTML;
+      btn.classList.add('bg-secondary-container', 'text-on-secondary-fixed');
+
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function resetAudioBtn(btn) {
+      btn.setAttribute('data-playing', 'false');
+      btn.innerHTML = AUDIO_IDLE_HTML;
+      btn.classList.remove('bg-secondary-container', 'text-on-secondary-fixed');
+      if (currentAudioBtn === btn) currentAudioBtn = null;
+    }
+
+    function stopSpeaking() {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      if (currentAudioBtn) resetAudioBtn(currentAudioBtn);
+    }
+
+    // Voices load asynchronously in some browsers; warm the cache early.
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+
+    function toggleFaq(button) {
+      const content = button.nextElementSibling;
+      const icon = button.querySelector('.material-symbols-outlined');
+      const isOpen = !content.classList.contains('hidden');
+
+      if (isOpen) {
+        content.classList.add('hidden');
+        icon.style.transform = 'rotate(0deg)';
+      } else {
+        content.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    function downloadRiskReport() {
+      if (!currentFindings.length) {
+        showScanError('Run an analysis first — there is no report to download yet.');
+        return;
+      }
+      const docName = (document.getElementById('audit-doc-filename') || {}).textContent || 'Contract';
+      const language = (document.getElementById('audit-doc-language') || {}).textContent || 'English';
+      const lines = [
+        'LEXLENS AI — CONTRACT RISK REPORT',
+        '==================================',
+        'Document:  ' + docName,
+        'Language:  ' + language,
+        'Generated: ' + new Date().toLocaleString(),
+        'Findings:  ' + currentFindings.length,
+        '',
+        'DISCLAIMER: For informational and civic literacy purposes only; not legal advice.',
+        '',
+      ];
+      currentFindings.forEach((f, i) => {
+        lines.push('--- ' + (i + 1) + '. ' + f.clause_name + '  [' + f.risk_level + '] ---');
+        lines.push('EXCERPT: "' + f.quote + '"');
+        lines.push('PLAIN SUMMARY: ' + f.plain_summary);
+        lines.push('ACTION STEP: ' + f.action_step);
+        lines.push('');
+      });
+      const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'LexLens_Risk_Report.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    }
+
+    // Contact Form Logic
+    document.querySelectorAll('.user-role-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('.user-role-pill').forEach(p => {
+          p.classList.remove('bg-secondary-container', 'text-on-secondary-fixed', 'font-bold', 'shadow-sm');
+          p.classList.add('bg-surface-container', 'text-on-surface-variant');
+        });
+        pill.classList.remove('bg-surface-container', 'text-on-surface-variant');
+        pill.classList.add('bg-secondary-container', 'text-on-secondary-fixed', 'font-bold', 'shadow-sm');
+        document.getElementById('selectedUserType').value = pill.getAttribute('data-role');
+      });
+    });
+
+    function toggleAttachmentBox() {
+      const box = document.getElementById('attachmentDropzone');
+      const btn = document.getElementById('toggleUploadBtn');
+      if (box.classList.contains('hidden')) {
+        box.classList.remove('hidden');
+        btn.textContent = 'Hide Box';
+      } else {
+        box.classList.add('hidden');
+        btn.textContent = '+ Add File';
+      }
+    }
+
+    function handleFilePicked(event) {
+      const file = event.target.files[0];
+      if (file) {
+        document.getElementById('pickedFileName').textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+        document.getElementById('pickedFileInfo').classList.remove('hidden');
+      }
+    }
+
+    function clearFileAttachment(event) {
+      event.stopPropagation();
+      document.getElementById('fileInputElem').value = '';
+      document.getElementById('pickedFileInfo').classList.add('hidden');
+    }
+
+    function handleFormSubmission() {
+      const form = document.getElementById('lexlensContactForm');
+      const successBox = document.getElementById('successReassuranceBox');
+      const submitBtn = document.getElementById('submitBtn');
+
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">refresh</span> Processing...';
+
+      setTimeout(() => {
+        form.classList.add('hidden');
+        successBox.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Submit Feedback to LexLens Team</span><span class="material-symbols-outlined text-lg">arrow_forward</span>';
+      }, 700);
+    }
+
+    function resetFormState() {
+      const form = document.getElementById('lexlensContactForm');
+      const successBox = document.getElementById('successReassuranceBox');
+      form.reset();
+      document.getElementById('charCounter').innerText = '0 / 1200';
+      document.getElementById('pickedFileInfo').classList.add('hidden');
+      document.getElementById('attachmentDropzone').classList.add('hidden');
+      document.getElementById('toggleUploadBtn').textContent = '+ Add File';
+      successBox.classList.add('hidden');
+      form.classList.remove('hidden');
+    }
+
+    // ─── Language switch: re-run the analysis with the SAME document ───
+    // There are two language selects (header + workspace). They are kept in
+    // sync bidirectionally, and EITHER one triggers a re-run: re-uploading
+    // the same document gives verbatim-identical quotes, so a language
+    // toggle is a natural re-run rather than a separate feature.
+    (function initLanguageSwitch() {
+      const sel = document.getElementById('analysis-language-select');
+      const headerSel = document.getElementById('header-language-select');
+      if (!sel) return;
+
+      function onLanguageChange() {
+        if (isAnalyzing) return;
+        if (lastInput) {
+          reRunWithCurrentInput();
+        } else {
+          showScanError('Run an analysis first — then switching the output language re-scans the same document in the new language.');
+        }
+      }
+
+      sel.addEventListener('change', () => {
+        if (headerSel) headerSel.value = sel.value;
+        onLanguageChange();
+      });
+      if (headerSel) {
+        headerSel.addEventListener('change', () => {
+          sel.value = headerSel.value;
+          onLanguageChange();
+        });
+      }
+    })();
+
+    // ─── Drag-and-drop on the upload dropzone ───
+    (function initDragDrop() {
+      const dropzone = document.getElementById('dropzone-view');
+      if (!dropzone) return;
+      ['dragenter', 'dragover'].forEach(ev => dropzone.addEventListener(ev, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('ring-2', 'ring-primary');
+      }));
+      ['dragleave', 'drop'].forEach(ev => dropzone.addEventListener(ev, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('ring-2', 'ring-primary');
+      }));
+      dropzone.addEventListener('drop', e => {
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) handleFiles(file);
+      });
+    })();
+
+    // ─── Initial state: reset counts to zero, hydrate stats from any ───
+    // server-rendered state, and disable the analysis UI if the backend is down.
+    (async function init() {
+      filterClauses('all');
+      try {
+        const res = await fetch('/health');
+        if (!res.ok) throw new Error('health ' + res.status);
+      } catch (_) {
+        showScanError('Cannot reach the LexLens backend. If you are running locally, start it with: uvicorn app.main:app --port 8000');
+      }
+    })();
+  </script>
+</body>
+</html>        
