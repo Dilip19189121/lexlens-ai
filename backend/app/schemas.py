@@ -49,6 +49,10 @@ class AnalyzeResponse(BaseModel):
 
     filename: str = Field(..., description="Original name of the uploaded file.")
     total_pages: int = Field(..., description="Number of pages in the PDF.")
+    language: str = Field(
+        "English",
+        description="Language the plain_summary/action_step fields were written in.",
+    )
     findings: List[ClauseFinding] = Field(
         ..., description="Risk findings, worst first (HIGH → SAFE)."
     )

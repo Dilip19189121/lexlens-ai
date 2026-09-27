@@ -8,12 +8,15 @@ Responsibilities:
   2. Batch only UNRECOGNIZED paragraphs into LLM-sized chunks (with overlap
      so clauses split across a boundary aren't lost) and call the LLM with
      multi-key rotation.
-  3. Hold THE system prompt that forces strict JSON schema output.
+  3. Hold THE system prompt that forces strict JSON schema output, with a
+     language directive so plain_summary/action_step can be produced in the
+     requested output language while quotes stay verbatim.
   4. Parse/validate the model's response into `ClauseFinding` objects —
      salvaging malformed JSON if the model wraps it in prose or fences.
 """
 
 import json
+import logging
 import re
 from typing import List
 
@@ -50,6 +53,86 @@ Example output:
 may terminate with 0 days notice without compensation.", "plain_summary": "They \
 can cancel on you instantly without paying you anything extra.", "action_step": \
 "Request a minimum 14-day written notice requirement."}]"""
+
+logger = logging.getLogger("lexlens")
+
+# ── Multilingual support ──────────────────────────────────────────────
+
+# Default output language. Requests may pass any language name (English,
+# Telugu, Hindi, ...); English keeps the zero-extra-cost local lane.
+DEFAULT_LANGUAGE = "English"
+
+
+def build_system_prompt(language: str = DEFAULT_LANGUAGE) -> str:
+    """Return the system prompt with a language directive for the output.
+
+    plain_summary and action_step follow the requested language; clause_name
+    and quote stay in the source document's language — the quote must remain
+    verbatim (the anti-hallucination rule, prd.md section 8) and clause_name
+    is a stable UI label. English gets the base prompt unchanged.
+    """
+    if not language or language == DEFAULT_LANGUAGE:
+        return SYSTEM_PROMPT
+    return SYSTEM_PROMPT + (
+        "\n\nLanguage requirement: Write the plain_summary and action_step "
+        f"fields in {language}. Keep the clause_name and quote fields in "
+        "their original language (do not translate the quote — it must "
+        "remain verbatim from the source document)."
+    )
+
+
+def _translate_system_prompt(language: str) -> str:
+    """System prompt for the local-findings translation lane.
+
+    The pattern matcher's plain_summary/action_step strings are pre-written
+    in English; when the user requests another language, these findings are
+    routed through the LLM too (same key-rotation chain) so the WHOLE
+    response speaks one language.
+    """
+    return (
+        "You are a translator for a legal-risk report aimed at everyday "
+        "people. You will receive a JSON array of clause findings. Return "
+        "ONLY a JSON array — no markdown fences, no explanations — with the "
+        "same elements in the same order and the same number of elements.\n"
+        "For each element:\n"
+        '  - "quote": keep EXACTLY as given — it is verbatim source text and '
+        "must never be translated or altered.\n"
+        '  - "clause_name": keep EXACTLY as given (stable English UI label).\n'
+        '  - "risk_level": keep EXACTLY as given.\n'
+        f'  - "plain_summary" and "action_step": rewrite in {language}, '
+        "preserving the meaning in simple, natural phrasing.\n"
+        "Output only the JSON array."
+    )
+
+
+def _translate_findings(findings: List[ClauseFinding], language: str) -> tuple:
+    """Rewrite locally-matched findings' plain_summary/action_step in `language`.
+
+    Sends the findings (as a JSON payload) through the same key-rotation LLM
+    chain. clause_name, risk_level, and quote are re-attached from the
+    ORIGINAL findings, so no model output can corrupt the verbatim-quote
+    guarantee. Raises ProviderError / ValueError like the main lane —
+    callers decide whether to fall back to the English text.
+    """
+    payload = json.dumps([f.model_dump() for f in findings])
+    raw, provider = llm_client.call_llm(_translate_system_prompt(language), payload)
+    translated = parse_findings(raw)
+    if len(translated) != len(findings):
+        raise ValueError(
+            f"translation returned {len(translated)} findings, "
+            f"expected {len(findings)}"
+        )
+    merged = [
+        ClauseFinding(
+            clause_name=f.clause_name,
+            risk_level=f.risk_level,
+            quote=f.quote,  # verbatim from the document, never the model's
+            plain_summary=t.plain_summary or f.plain_summary,
+            action_step=t.action_step or f.action_step,
+        )
+        for f, t in zip(findings, translated)
+    ]
+    return merged, provider
 
 # ── Chunking ────────────────────────────────────────────────────────────────
 
@@ -172,7 +255,7 @@ def _same_quote_region(a: str, b: str) -> bool:
     return bool(probe_a) and bool(probe_b) and (probe_a in nb or probe_b in na)
 
 
-def analyze_contract_text(text: str) -> tuple:
+def analyze_contract_text(text: str, language: str = DEFAULT_LANGUAGE) -> tuple:
     """Hybrid analysis of the full contract text: (findings, provider_used).
 
     Pipeline (prd.md section 5, "Hybrid Risk Detection"):
@@ -184,9 +267,16 @@ def analyze_contract_text(text: str) -> tuple:
          result), drop quotes pointing at the same clause text, and sort
          HIGH → SAFE so the UI renders the worst risks first.
 
+    Multilingual: for non-English requests the locally-matched findings are
+    additionally routed through the LLM (translation lane) so their
+    plain_summary/action_step come out in the requested language — keeping
+    the whole response consistent. Quotes stay verbatim regardless.
+
     provider_used is a debug aid: 'local-patterns' when the matcher caught
     everything, the LLM provider label when nothing matched, or
-    'local-patterns+<provider>' for the mixed case.
+    'local-patterns+<provider>' for the mixed case. In non-English runs a
+    '+translate' suffix records that the local findings were also LLM-
+    processed (e.g. 'local-patterns+groq:key#1+translate').
 
     Raises:
         llm_client.ProviderError: if every provider/key is exhausted.
@@ -200,15 +290,38 @@ def analyze_contract_text(text: str) -> tuple:
     unmatched_text = pattern_matcher.uncovered_text(text, spans)
 
     # ── 2. LLM lane for unrecognized text only ──
+    language = (language or DEFAULT_LANGUAGE).strip() or DEFAULT_LANGUAGE
+    system_prompt = build_system_prompt(language)
+    needs_translation = language != DEFAULT_LANGUAGE and bool(local_findings)
+
     llm_findings: List[ClauseFinding] = []
     provider_used = "local-patterns"
     if unmatched_text:
         for chunk in chunk_text(unmatched_text):
-            raw, provider = llm_client.call_llm(SYSTEM_PROMPT, chunk)
+            raw, provider = llm_client.call_llm(system_prompt, chunk)
             provider_used = provider
             llm_findings.extend(parse_findings(raw))
         if local_findings:
             provider_used = f"local-patterns+{provider_used}"
+
+    # ── 2b. Translation lane for local findings (non-English only) ──
+    # The rulebook's plain_summary/action_step strings are pre-written in
+    # English; route them through the LLM too so the whole response speaks
+    # one language. On failure, keep the English originals (the verbatim
+    # quotes are unaffected either way) rather than failing the request.
+    if needs_translation:
+        try:
+            local_findings, translate_provider = _translate_findings(
+                local_findings, language
+            )
+            provider_used += f"+translate({translate_provider})"
+        except (llm_client.ProviderError, ValueError) as exc:
+            logger.warning(
+                "Translation of local findings to %s failed; falling back to "
+                "English summaries: %s",
+                language,
+                exc,
+            )
 
     # ── 3. Merge, dedupe, sort ──
     all_findings = local_findings + llm_findings
