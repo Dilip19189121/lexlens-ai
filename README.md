@@ -20,7 +20,7 @@ Free-tier LLM APIs have rate limits (requests per minute). To keep the app respo
 
 lexlens-ai/
 ├── backend/ → FastAPI app, routes, LLM logic, PDF parsing
-├── frontend/ → React UI (upload box, risk cards, dashboard)
+│   └── frontend/ → UI (upload box, risk cards, dashboard) — served by FastAPI at /
 ├── README.md
 
 

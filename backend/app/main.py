@@ -4,9 +4,11 @@ main.py — FastAPI application entry point for LexLens AI.
 Run locally from the `backend/` directory with:
     uvicorn app.main:app --reload --port 8000
 
-The API (POST /analyze, GET /health, /docs) and the frontend (frontend/
+The API (POST /analyze, GET /health, /docs) and the frontend (backend/frontend/
 served at /) ship as ONE deployable service: opening http://localhost:8000/
-serves the LexLens UI, which calls the API on the same origin.
+serves the LexLens UI, which calls the API on the same origin. Everything the
+service needs lives under backend/ so the deploy root can be set to backend/
+(e.g. Railway, Render) without any sibling folder.
 """
 
 import logging
@@ -20,13 +22,14 @@ from fastapi.staticfiles import StaticFiles
 from . import config, pattern_matcher
 from .routes import router
 
-# frontend/ lives one level above backend/app/ — this file is backend/app/main.py.
-FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
+# frontend/ lives inside backend/ (this file is backend/app/main.py) so the
+# whole app is self-contained in the deployable folder.
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 if not FRONTEND_DIR.is_dir():
     raise RuntimeError(
         f"Frontend folder not found at {FRONTEND_DIR}. "
-        "The frontend/ directory must sit next to backend/ in the repo root."
+        "The frontend/ directory must sit inside backend/ (backend/frontend/)."
     )
 
 logging.basicConfig(level=logging.INFO)

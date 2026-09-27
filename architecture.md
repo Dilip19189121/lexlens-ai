@@ -10,7 +10,7 @@
 |                 (React Frontend UI - Tailored via Freebuff)           |
 +-----------------------------------------------------------------------+
 |
-[ Upload PDF / Paste Text ]
+[ Upload PDF / Paste Text + language (default: English) ]
 v
 +-----------------------------------------------------------------------+
 |                          BACKEND (FastAPI)                            |
@@ -52,19 +52,22 @@ v
 * **Hybrid Processing Pipeline:**
   1. **Fast Local Matcher:** Scans text against known risky clauses from datasets (CUAD/UnfairToS) without hitting API endpoints.
   2. **LLM Fallback Module:** Passes unmatched or ambiguous clauses to the Groq API (or Gemini free tier) using strict JSON output prompts.
+  3. **Translation Lane (non-English requests):** Locally pattern-matched findings carry pre-written English summaries; for non-English `language` values they are also routed through the LLM (same key-rotation chain) so `plain_summary`/`action_step` come out in the requested language. `clause_name`/`risk_level`/`quote` are re-attached from the original deterministic result — the quote is never translated, only the explanation fields. Falls back to the English text if the translation call fails.
+* **Multilingual Output:** An optional `language` form field (default `"English"`) on `POST /analyze` drives a language directive in the system prompt; the response echoes the language back so the frontend knows what was used.
 * **Schema Validation:** Ensures all output strictly follows the required JSON contract prior to sending it back to the client.
 
 ---
 
 ## 3. Data & API Flow
 
-1. **Input:** User submits a legal document (PDF or plain text) via the web client.
+1. **Input:** User submits a legal document (PDF or plain text) plus an optional output `language` (default `"English"`) via the web client.
 2. **Parsing:** FastAPI reads the document and extracts standard UTF-8 string content.
 3. **Classification:**
    - Text is evaluated against pre-defined local risk rules.
-   - Remaining complex sections are sent to **Groq API**.
-4. **Formatting:** Results are mapped to `clause_name`, `risk_level`, `quote`, `plain_summary`, and `action_step`.
-5. **Display:** The UI renders structured risk cards sorted by priority level.
+   - Remaining complex sections are sent to **Groq API** with a language directive in the system prompt.
+   - For non-English requests, the local findings' explanation fields are also rewritten by the **Groq API** (translation lane); quotes stay verbatim.
+4. **Formatting:** Results are mapped to `clause_name`, `risk_level`, `quote`, `plain_summary`, and `action_step`, plus a top-level `language` field.
+5. **Display:** The UI renders structured risk cards sorted by priority level in the requested language.
 
 ```
 

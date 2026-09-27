@@ -67,6 +67,7 @@ def test_analyze_endpoint(client: TestClient) -> None:
 
     check("filename echoed", body.get("filename") == "sample_contract.pdf")
     check("page count parsed", body.get("total_pages") == 1, f"got {body.get('total_pages')}")
+    check("language defaults to English", body.get("language") == "English", f"got {body.get('language')}")
     if LIVE_MODE:
         # Hybrid: local patterns run first; an LLM provider label after the
         # '+' proves a REAL API call happened for the unmatched text.
@@ -97,6 +98,59 @@ def test_analyze_endpoint(client: TestClient) -> None:
     order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "SAFE": 3}
     levels = [f["risk_level"] for f in findings]
     check("findings sorted HIGH->SAFE", levels == sorted(levels, key=lambda l: order.get(l, 4)), str(levels))
+
+
+def test_multilingual_telugu(client: TestClient) -> None:
+    """language=Telugu: summaries in Telugu, quotes stay verbatim English.
+
+    Offline this exercises the request plumbing only (mock LLM output is
+    canned English). Live it verifies the real model honors the language
+    directive — the multilingual acceptance test from the task spec.
+    """
+    mode = "LIVE APIs" if LIVE_MODE else "mock mode"
+    print(f"\n3. POST /analyze with language=Telugu ({mode})")
+    with SAMPLE_PDF.open("rb") as fh:
+        response = client.post(
+            "/analyze",
+            files={"file": ("sample_contract.pdf", fh, "application/pdf")},
+            data={"language": "Telugu"},
+        )
+    check("HTTP 200", response.status_code == 200, f"got {response.status_code}: {response.text[:300]}")
+    if response.status_code != 200:
+        return
+    body = response.json()
+    findings = body.get("findings", [])
+
+    check("language echoed back", body.get("language") == "Telugu", f"got {body.get('language')}")
+    check("findings returned", len(findings) >= 1, f"got {len(findings)}")
+    if not findings:
+        return
+
+    # Quotes must remain verbatim English regardless of output language.
+    telugu_indicators = ("అ", "ఆ", "ఇ", "ఈ", "క", "గ", "చ", "జ", "త", "ద", "న", "ప", "బ", "మ", "య", "ర", "ల", "వ", "శ", "స", "హ")
+
+    def is_telugu(s: str) -> bool:
+        return any(ch in telugu_indicators for ch in s)
+
+    quotes_english = all(not is_telugu(f["quote"]) for f in findings)
+    check("quotes contain no Telugu (stay verbatim English)", quotes_english)
+
+    if LIVE_MODE:
+        summaries_telugu = all(is_telugu(f["plain_summary"]) for f in findings)
+        actions_telugu = all(is_telugu(f["action_step"]) for f in findings)
+        check("plain_summary written in Telugu", summaries_telugu)
+        check("action_step written in Telugu", actions_telugu)
+        # Translation lane: local findings routed through the LLM too.
+        check(
+            "translation lane reported for local findings",
+            "+translate" in str(body.get("provider_used")),
+            f"got {body.get('provider_used')}",
+        )
+    else:
+        print(
+            "  [INFO] mock mode returns canned English — Telugu text is "
+            "verified in --live mode"
+        )
 
 
 def test_pattern_matcher() -> None:
@@ -231,6 +285,7 @@ def main() -> int:
 
     client = TestClient(app)
     test_analyze_endpoint(client)
+    test_multilingual_telugu(client)
     if not LIVE_MODE:
         test_pattern_matcher()
         test_validation_errors(client)

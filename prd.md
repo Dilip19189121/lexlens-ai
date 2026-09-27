@@ -31,6 +31,7 @@ LexLens AI is a web-based, automated contract parser and risk-analysis dashboard
 7. **Negotiation Tips** — actionable suggestion per risky clause
 8. **Downloadable Risk Report** — export findings as PDF/text
 9. **Disclaimer Banner** — "For informational purposes only; not official legal counsel"
+10. **Multilingual Output** — the user picks the explanation language (English, Telugu, Hindi, ...) and every `plain_summary`/`action_step` is written in that language; the `quote` always stays verbatim in the document's original language. Locally pattern-matched clauses are also routed through the LLM for non-English requests so the whole response is consistent.
 
 ## 6. JSON Response Schema
 ```json
@@ -42,6 +43,8 @@ LexLens AI is a web-based, automated contract parser and risk-analysis dashboard
   "action_step": "Request a minimum 14-day written notice requirement."
 }
 ```
+
+The top-level `POST /analyze` response additionally carries `language` (the output language used for `plain_summary`/`action_step`; default `"English"`). `quote` is never translated — it must remain a character-for-character excerpt from the uploaded document (see section 8).
 
 ## 7. Tech Stack
 | Component | Technology |
@@ -64,11 +67,14 @@ LexLens AI is a web-based, automated contract parser and risk-analysis dashboard
 **Unstructured LLM Output Breaking UI**
 - Solution: Enforce strict JSON schema in every LLM prompt/response.
 
+**Multilingual Output vs. Verbatim Quotes**
+- Solution: The language directive applies only to `plain_summary`/`action_step`; the prompt forbids translating `quote` (kept character-for-character from the source). Locally pattern-matched findings — pre-written in English — are routed through the LLM as well for non-English requests, with `clause_name`/`risk_level`/`quote` re-attached from the original deterministic result so no model output can corrupt the verbatim-quote guarantee.
+
 ## 9. Out of Scope (for hackathon version)
 - User accounts/login
 - Persistent database storage of contracts
 - RAG/vector search (direct prompt injection is sufficient at this scale)
-- Multi-language support
+- UI localization (labels/buttons) — explanation output IS multilingual (see feature 10), but the interface chrome stays English for now
 
 ## 10. Success Criteria (Demo)
 - User uploads a real sample contract (from dataset or public template)

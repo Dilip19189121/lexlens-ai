@@ -1,0 +1,142 @@
+{
+  "passed": 27,
+  "failed": 0,
+  "total": 27,
+  "results": [
+    {
+      "name": "app loads at /",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "header nav visible on desktop",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "loading bar appears during real analysis",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "real summary counts render (not hardcoded 24/2/19)",
+      "pass": true,
+      "detail": "total=12 high=5 safe=0"
+    },
+    {
+      "name": "audit title uses real filename",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "cards rendered",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no empty-state leftover",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "high-risk filter shows only high cards",
+      "pass": true,
+      "detail": "shown=5"
+    },
+    {
+      "name": "card has clause_name h3",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "card has verbatim quote blockquote",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "card has plain summary",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "card has action step",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "audio button present",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "language switch re-runs analysis (cards re-rendered)",
+      "pass": true,
+      "detail": "total=6"
+    },
+    {
+      "name": "response language echoed in dashboard",
+      "pass": true,
+      "detail": "Telugu"
+    },
+    {
+      "name": "plain summary rendered in Telugu script",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "quotes remain verbatim (no Telugu codepoints)",
+      "pass": true,
+      "detail": "\"Client may terminate this Agreement at any time, for any re"
+    },
+    {
+      "name": "audio button triggers SpeechSynthesis.speak()",
+      "pass": true,
+      "detail": "spoke"
+    },
+    {
+      "name": "pasted-text analysis returns findings",
+      "pass": true,
+      "detail": "total=1"
+    },
+    {
+      "name": "pasted-text title set",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "download risk report works",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "zero console errors on desktop flow",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile menu button visible",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile menu opens",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "no horizontal overflow on mobile",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile end-to-end analysis works",
+      "pass": true,
+      "detail": "total=2"
+    },
+    {
+      "name": "zero page errors on mobile flow",
+      "pass": true,
+      "detail": ""
+    }
+  ]
+}
