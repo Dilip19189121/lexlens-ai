@@ -1,5 +1,8 @@
 # LexLens AI
 
+## 🚀 Live Demo
+[https://lexlens-ai-production.up.railway.app/]
+
 ## Overview
 LexLens AI is a web-based contract analyzer that helps everyday individuals and small business owners understand risky or unfair clauses in legal documents (rental agreements, employment contracts, freelance SOWs) without paying for expensive legal review.
 
